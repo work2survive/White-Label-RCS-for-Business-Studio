@@ -1383,22 +1383,46 @@ html, body {
   gap: 16px;
   padding: 8px;
   overflow: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   background: radial-gradient(circle at center, #1b2432 0%, #0f141c 100%);
 }
 
-.rcs-phone-scale-container {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-shrink: 0;
+.rcs-stage-wrap::-webkit-scrollbar,
+.rcs-preview-shell::-webkit-scrollbar,
+.rcs-preview-shell *::-webkit-scrollbar,
+.rcs-phone-hardware::-webkit-scrollbar,
+.rcs-phone-hardware *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
-/* Phone Physical Bezel & Screen Variables */
-.rcs-phone-hardware {
+.rcs-preview-shell,
+.rcs-preview-shell *,
+.rcs-phone-hardware,
+.rcs-phone-hardware * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Exact Scaled Bounding Box for the Hardware Frame (Prevents Flexbox Width Compression) */
+.rcs-phone-scale-container {
   position: relative;
-  transform: scale(var(--phone-scale, 0.76));
-  transform-origin: top center;
+  display: block;
+  flex-shrink: 0;
+  margin: auto;
+}
+
+/* Phone Physical Bezel & Screen Variables (Locked 1:1 to device.width × device.height before uniform scale) */
+.rcs-phone-hardware {
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-shrink: 0;
+  transform: scale(var(--phone-scale, 0.68));
+  transform-origin: top left;
   background: #ffffff;
   color: #1f1f1f;
   border: 10px solid #1e242d;
@@ -1409,7 +1433,12 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   user-select: none;
+  cursor: none !important;
   font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+}
+
+.rcs-phone-hardware * {
+  cursor: none !important;
 }
 
 /* Theme Palettes (Google Messages Material 3 Light & Dark) */
@@ -1652,17 +1681,25 @@ html, body {
   font-weight: 600;
 }
 
-/* 3. Scrollable Conversation Feed */
+/* 3. Scrollable Conversation Feed (Native scrollbars hidden to match real mobile OS UI) */
 .rcs-chat-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 6px 8px 14px;
   background: var(--app-bg);
   display: flex;
   flex-direction: column;
   gap: 8px;
   scroll-behavior: smooth;
+}
+
+.rcs-chat-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Large Agent Profile Header (Matches TIPOS Screenshot_20260617-120218.png) */
@@ -3078,9 +3115,9 @@ const DEVICE_PRESETS = [
     brand: 'Google',
     os: 'android',
     defaultSkin: 'google_messages_m3',
-    width: 412,
-    height: 892,
-    logicalRes: '412 × 892 dp (1344 × 2992 px)',
+    width: 432,
+    height: 868,
+    logicalRes: '412 × 848 dp (1344 × 2992 px)',
     dpi: '489 ppi',
     bezelRadius: 44,
     screenRadius: 36,
@@ -3095,9 +3132,9 @@ const DEVICE_PRESETS = [
     brand: 'Samsung',
     os: 'android',
     defaultSkin: 'samsung_messages_oneui',
-    width: 412,
-    height: 891,
-    logicalRes: '412 × 891 dp (1440 × 3120 px)',
+    width: 432,
+    height: 868,
+    logicalRes: '412 × 848 dp (1440 × 3120 px)',
     dpi: '505 ppi',
     bezelRadius: 16,
     screenRadius: 10,
@@ -3112,9 +3149,9 @@ const DEVICE_PRESETS = [
     brand: 'Motorola',
     os: 'android',
     defaultSkin: 'google_messages_m3',
-    width: 412,
-    height: 892,
-    logicalRes: '412 × 892 dp (1220 × 2712 px)',
+    width: 432,
+    height: 868,
+    logicalRes: '412 × 848 dp (1220 × 2712 px)',
     dpi: '446 ppi',
     bezelRadius: 40,
     screenRadius: 32,
@@ -3129,9 +3166,9 @@ const DEVICE_PRESETS = [
     brand: 'Apple',
     os: 'ios',
     defaultSkin: 'ios_18_messages',
-    width: 393,
-    height: 852,
-    logicalRes: '393 × 852 pt (1206 × 2622 px)',
+    width: 413,
+    height: 832,
+    logicalRes: '393 × 812 pt (1206 × 2622 px)',
     dpi: '460 ppi',
     bezelRadius: 50,
     screenRadius: 42,
@@ -3146,9 +3183,9 @@ const DEVICE_PRESETS = [
     brand: 'Apple',
     os: 'ios',
     defaultSkin: 'ios_18_messages',
-    width: 375,
-    height: 812,
-    logicalRes: '375 × 812 pt (1170 × 2532 px)',
+    width: 395,
+    height: 796,
+    logicalRes: '375 × 776 pt (1170 × 2532 px)',
     dpi: '460 ppi',
     bezelRadius: 44,
     screenRadius: 36,
@@ -3163,9 +3200,9 @@ const DEVICE_PRESETS = [
     brand: 'Google / Samsung Fold',
     os: 'android',
     defaultSkin: 'google_messages_m3',
-    width: 620,
+    width: 640,
     height: 820,
-    logicalRes: '673 × 841 dp (2076 × 2152 px)',
+    logicalRes: '620 × 800 dp (2076 × 2152 px)',
     dpi: '373 ppi',
     bezelRadius: 30,
     screenRadius: 22,
@@ -5517,7 +5554,7 @@ class RcsPhonePreview {
           <div class="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(device.width * this.state.zoom)}px; height: ${Math.round(device.height * this.state.zoom)}px;">
             <div class="rcs-phone-hardware is-os-${device.os} is-skin-${skin.id} is-theme-${this.state.theme} is-cutout-${device.cutout}"
                  id="rcs-phone-viewport-host"
-                 style="width: ${device.width}px; height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
+                 style="width: ${device.width}px; height: ${device.height}px; min-width: ${device.width}px; max-width: ${device.width}px; min-height: ${device.height}px; max-height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
               ${this.renderPhoneScreenContents(device, skin, isSmsFallback)}
             </div>
           </div>

@@ -1376,22 +1376,46 @@ html, body {
   gap: 16px;
   padding: 8px;
   overflow: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   background: radial-gradient(circle at center, #1b2432 0%, #0f141c 100%);
 }
 
-.rcs-phone-scale-container {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-shrink: 0;
+.rcs-stage-wrap::-webkit-scrollbar,
+.rcs-preview-shell::-webkit-scrollbar,
+.rcs-preview-shell *::-webkit-scrollbar,
+.rcs-phone-hardware::-webkit-scrollbar,
+.rcs-phone-hardware *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
-/* Phone Physical Bezel & Screen Variables */
-.rcs-phone-hardware {
+.rcs-preview-shell,
+.rcs-preview-shell *,
+.rcs-phone-hardware,
+.rcs-phone-hardware * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Exact Scaled Bounding Box for the Hardware Frame (Prevents Flexbox Width Compression) */
+.rcs-phone-scale-container {
   position: relative;
-  transform: scale(var(--phone-scale, 0.76));
-  transform-origin: top center;
+  display: block;
+  flex-shrink: 0;
+  margin: auto;
+}
+
+/* Phone Physical Bezel & Screen Variables (Locked 1:1 to device.width × device.height before uniform scale) */
+.rcs-phone-hardware {
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-shrink: 0;
+  transform: scale(var(--phone-scale, 0.68));
+  transform-origin: top left;
   background: #ffffff;
   color: #1f1f1f;
   border: 10px solid #1e242d;
@@ -1402,7 +1426,12 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   user-select: none;
+  cursor: none !important;
   font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+}
+
+.rcs-phone-hardware * {
+  cursor: none !important;
 }
 
 /* Theme Palettes (Google Messages Material 3 Light & Dark) */
@@ -1645,17 +1674,25 @@ html, body {
   font-weight: 600;
 }
 
-/* 3. Scrollable Conversation Feed */
+/* 3. Scrollable Conversation Feed (Native scrollbars hidden to match real mobile OS UI) */
 .rcs-chat-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 6px 8px 14px;
   background: var(--app-bg);
   display: flex;
   flex-direction: column;
   gap: 8px;
   scroll-behavior: smooth;
+}
+
+.rcs-chat-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Large Agent Profile Header (Matches TIPOS Screenshot_20260617-120218.png) */

@@ -319,7 +319,7 @@ export class RcsPhonePreview {
           <div class="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(device.width * this.state.zoom)}px; height: ${Math.round(device.height * this.state.zoom)}px;">
             <div class="rcs-phone-hardware is-os-${device.os} is-skin-${skin.id} is-theme-${this.state.theme} is-cutout-${device.cutout}"
                  id="rcs-phone-viewport-host"
-                 style="width: ${device.width}px; height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
+                 style="width: ${device.width}px; height: ${device.height}px; min-width: ${device.width}px; max-width: ${device.width}px; min-height: ${device.height}px; max-height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
               ${this.renderPhoneScreenContents(device, skin, isSmsFallback)}
             </div>
           </div>
