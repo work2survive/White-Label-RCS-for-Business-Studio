@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>White-Label RCS for Business — Agnostic Template Chooser & Mobile Preview SDK</title>
+  <meta name="description" content="Framework-agnostic HTML/JS modules for choosing RCS Rich Card templates, analyzing media center-crop & character limits, and previewing across Android Google Messages, Samsung One UI, and iOS 18 RCS." />
+  <link rel="stylesheet" href="./src/styles/rcs-studio.css" />
+</head>
+<body>
+  <div class="rcs-workbench">
+    <!-- Compact 40px Top Studio Bar (Fits 720p comfortably) -->
+    <header class="rcs-workbench-header">
+      <div class="rcs-brand-cluster">
+        <span class="rcs-brand-logo">RCS</span>
+        <h1>White-Label RCS for Business Studio</h1>
+        <span class="rcs-header-tag">Agnostic ES Modules • 720p Compact UI</span>
+      </div>
+
+      <div class="rcs-header-right">
+        <div class="rcs-mode-switcher" role="group" aria-label="Module Isolation Switcher">
+          <button type="button" class="rcs-mode-btn is-active" data-layout-mode="both" title="Show both modules side-by-side">
+            Split Studio (720p)
+          </button>
+          <button type="button" class="rcs-mode-btn" data-layout-mode="chooser" title="Use Module 1 (Template Chooser) standalone">
+            Module 1: Chooser Only
+          </button>
+          <button type="button" class="rcs-mode-btn" data-layout-mode="preview" title="Use Module 2 (Phone Preview) standalone">
+            Module 2: Preview Only
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Decoupled Module Slots -->
+    <main class="rcs-workbench-grid" id="rcs-workbench-grid">
+      <!-- Module 1: Standalone Template Chooser -->
+      <section class="rcs-module-slot" id="chooser-module-root" aria-label="RCS Template Chooser Module"></section>
+
+      <!-- Module 2: Standalone Mobile OS & Phone Preview -->
+      <section class="rcs-module-slot" id="preview-module-root" aria-label="RCS Mobile Phone Preview Module"></section>
+    </main>
+
+    <!-- Reporting & Telemetry Hook Bar (For Future Analytics/Tracking Integration) -->
+    <footer class="rcs-telemetry-footer">
+      <div class="rcs-telemetry-stream">
+        <span class="rcs-telemetry-badge">● Reporting &amp; Tracking Hook:</span>
+        <code id="rcs-telemetry-last-event">Listening for RCS interactions...</code>
+      </div>
+      <div>
+        <span id="rcs-telemetry-counter">0 events tracked</span>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

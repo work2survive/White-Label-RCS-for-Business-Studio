@@ -1,0 +1,2032 @@
+/**
+ * @fileoverview Stylesheet for the Agnostic RCS Rich Card Template Chooser (`RcsTemplateChooser`)
+ * and Mobile Phone Simulator (`RcsPhonePreview`).
+ * Engineered to fit comfortably within a 1280×720 (720p) viewport while adapting fluidly to larger screens.
+ */
+
+:root {
+  --studio-bg: #0f141c;
+  --studio-panel: #161d27;
+  --studio-panel-elevated: #1d2633;
+  --studio-border: #283344;
+  --studio-border-subtle: #1f2937;
+  --studio-text: #f1f5f9;
+  --studio-text-muted: #94a3b8;
+  --studio-text-dim: #64748b;
+  --studio-accent: #0284c7;
+  --studio-accent-hover: #0369a1;
+  --studio-accent-soft: rgba(2, 132, 199, 0.16);
+  --studio-ok: #10b981;
+  --studio-warn: #f59e0b;
+  --studio-danger: #ef4444;
+  --studio-radius: 8px;
+  --studio-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font-family: var(--studio-font);
+  font-size: 12.5px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   Compact 720p Studio Shell Layout
+   ========================================================================== */
+.rcs-workbench {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.rcs-workbench-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 12px;
+  background: #0b0f16;
+  border-bottom: 1px solid var(--studio-border);
+  flex-shrink: 0;
+}
+
+.rcs-brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rcs-brand-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--studio-accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.5px;
+}
+
+.rcs-workbench-header h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--studio-text);
+}
+
+.rcs-header-tag {
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--studio-panel-elevated);
+  color: var(--studio-text-muted);
+  border: 1px solid var(--studio-border);
+}
+
+.rcs-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rcs-mode-switcher {
+  display: inline-flex;
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.rcs-mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--studio-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rcs-mode-btn.is-active {
+  background: var(--studio-accent);
+  color: #fff;
+}
+
+/* Main 2-Module Grid (Fits 1280×720 cleanly) */
+.rcs-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 47%) 1fr;
+  gap: 8px;
+  padding: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rcs-workbench-grid.is-mode-chooser-only {
+  grid-template-columns: 1fr;
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rcs-workbench-grid.is-mode-preview-only {
+  grid-template-columns: 1fr;
+}
+
+.rcs-module-slot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  border-radius: var(--studio-radius);
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Tiny, Color-Neutral Documentation Link Icon
+   ========================================================================== */
+.rcs-doc-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  color: #78879b;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  text-decoration: none;
+  vertical-align: middle;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.rcs-doc-link:hover {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.24);
+  border-color: rgba(203, 213, 225, 0.45);
+}
+
+.rcs-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.rcs-ico svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================================================
+   Module 1: RcsTemplateChooser Styles
+   ========================================================================== */
+.rcs-chooser-shell,
+.rcs-preview-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.rcs-chooser-topbar,
+.rcs-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #121821;
+  border-bottom: 1px solid var(--studio-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.rcs-module-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rcs-module-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  letter-spacing: 0.04em;
+}
+
+.rcs-module-badge.is-preview {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+
+.rcs-module-title h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--studio-text);
+}
+
+/* Pictogram Template Strip */
+.rcs-template-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 6px 8px;
+  background: #131a24;
+  border-bottom: 1px solid var(--studio-border);
+  flex-shrink: 0;
+}
+
+.rcs-tpl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 4px;
+  background: var(--studio-panel-elevated);
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  color: var(--studio-text-muted);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.rcs-tpl-btn:hover {
+  border-color: #475569;
+  color: var(--studio-text);
+}
+
+.rcs-tpl-btn.is-active {
+  background: var(--studio-accent-soft);
+  border-color: var(--studio-accent);
+  color: #fff;
+}
+
+.rcs-tpl-btn-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.rcs-tpl-ico {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+}
+
+.rcs-tpl-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Secondary Mode Tabs */
+.rcs-subtabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px 0;
+  background: #121821;
+  border-bottom: 1px solid var(--studio-border);
+  flex-shrink: 0;
+}
+
+.rcs-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--studio-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rcs-subtab:hover {
+  color: var(--studio-text);
+}
+
+.rcs-subtab.is-active {
+  color: #38bdf8;
+  border-bottom-color: #38bdf8;
+}
+
+.rcs-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.rcs-dot.is-detected {
+  background: var(--studio-ok);
+}
+
+.rcs-dot.is-fallback {
+  background: var(--studio-warn);
+}
+
+/* Scrollable Chooser Body */
+.rcs-chooser-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rcs-panel-section {
+  background: #121821;
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rcs-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.rcs-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* Card Switcher Bar for Carousel / Multi-Card */
+.rcs-card-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #121821;
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.rcs-card-pills {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.rcs-card-pill {
+  background: var(--studio-panel-elevated);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text-muted);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rcs-card-pill.is-active {
+  background: var(--studio-accent);
+  border-color: var(--studio-accent);
+  color: #fff;
+}
+
+.rcs-card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Geometry & Crop Controls */
+.rcs-geometry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.rcs-segmented {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+  gap: 3px;
+  background: var(--studio-panel);
+  padding: 2px;
+  border-radius: 5px;
+  border: 1px solid var(--studio-border);
+}
+
+.rcs-seg-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--studio-text-muted);
+  cursor: pointer;
+  font-size: 10.5px;
+}
+
+.rcs-seg-btn small {
+  font-size: 9.5px;
+  opacity: 0.75;
+}
+
+.rcs-seg-btn.is-active {
+  background: var(--studio-accent);
+  color: #fff;
+}
+
+/* Crop Diagnostic Box */
+.rcs-crop-diagnostic {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 8px;
+  align-items: center;
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border-subtle);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.rcs-crop-minimap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #090d12;
+  border-radius: 4px;
+  height: 76px;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.rcs-crop-stage {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(239, 68, 68, 0.7);
+}
+
+.rcs-crop-mask {
+  border: 1.5px solid #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  box-shadow: 0 0 0 999px rgba(239, 68, 68, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rcs-crop-safe-tag {
+  font-size: 8px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.78);
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.03em;
+}
+
+.rcs-crop-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcs-spec-pill {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 6px;
+}
+
+.rcs-spec-k {
+  color: var(--studio-text-muted);
+}
+
+.rcs-spec-v {
+  color: var(--studio-text);
+  font-size: 10.5px;
+}
+
+.rcs-spec-v.is-ok {
+  color: #34d399;
+}
+
+.rcs-spec-v.is-warn {
+  color: #fbbf24;
+}
+
+.rcs-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.rcs-upload-btn,
+.rcs-btn-ghost,
+.rcs-btn-primary,
+.rcs-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--studio-border);
+  background: var(--studio-panel-elevated);
+  color: var(--studio-text);
+  transition: all 0.12s ease;
+}
+
+.rcs-upload-btn:hover,
+.rcs-btn-ghost:hover,
+.rcs-icon-btn:hover {
+  border-color: #475569;
+  background: #263142;
+}
+
+.rcs-btn-primary {
+  background: var(--studio-accent);
+  border-color: var(--studio-accent);
+  color: #fff;
+}
+
+.rcs-btn-primary:hover {
+  background: var(--studio-accent-hover);
+}
+
+.rcs-icon-btn.is-active {
+  background: var(--studio-accent-soft);
+  border-color: var(--studio-accent);
+  color: #38bdf8;
+}
+
+.rcs-icon-btn.is-active-warn {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--studio-warn);
+  color: #fbbf24;
+}
+
+/* Inputs & Character Meters */
+.rcs-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcs-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rcs-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.rcs-micro-hint {
+  font-size: 10px;
+  color: var(--studio-text-dim);
+}
+
+.rcs-input,
+.rcs-textarea,
+.rcs-select-compact {
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  border-radius: 5px;
+  color: var(--studio-text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 5px 7px;
+  outline: none;
+}
+
+.rcs-input:focus,
+.rcs-textarea:focus,
+.rcs-select-compact:focus {
+  border-color: var(--studio-accent);
+}
+
+.rcs-textarea {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.rcs-meter-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rcs-meter-bar {
+  height: 3px;
+  background: #1e293b;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rcs-meter-fill {
+  height: 100%;
+  transition: width 0.15s ease;
+}
+
+.rcs-meter-fill.is-ok {
+  background: var(--studio-ok);
+}
+
+.rcs-meter-fill.is-warn {
+  background: var(--studio-warn);
+}
+
+.rcs-meter-fill.is-danger {
+  background: var(--studio-danger);
+}
+
+.rcs-meter-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--studio-text-muted);
+}
+
+.rcs-meter-badge.is-ok { color: #34d399; }
+.rcs-meter-badge.is-warn { color: #fbbf24; }
+.rcs-meter-badge.is-danger { color: #f87171; }
+
+/* Suggestions Editor List */
+.rcs-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rcs-sug-row {
+  display: grid;
+  grid-template-columns: 112px 1.1fr 1fr auto auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.rcs-sug-type {
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text);
+  border-radius: 5px;
+  padding: 4px;
+  font-size: 11px;
+}
+
+.rcs-sug-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rcs-sug-input-wrap .rcs-input {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.rcs-sug-counter {
+  position: absolute;
+  right: 6px;
+  font-size: 9.5px;
+  color: var(--studio-text-dim);
+}
+
+.rcs-sug-counter.is-warn { color: var(--studio-warn); }
+.rcs-sug-counter.is-danger { color: var(--studio-danger); font-weight: 700; }
+
+.rcs-sug-del {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--studio-text-dim);
+  padding: 3px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rcs-sug-del:hover {
+  color: var(--studio-danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Agent Tab & Toggles */
+.rcs-agent-banner {
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rcs-agent-banner.is-detected {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.rcs-agent-banner.is-fallback {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.rcs-agent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rcs-color-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rcs-color-picker {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.rcs-hex-input {
+  width: 76px;
+  font-family: monospace;
+}
+
+.rcs-chrome-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.rcs-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rcs-sms-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.rcs-sms-pill {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text-muted);
+}
+
+.rcs-sms-pill.is-ok strong { color: #34d399; }
+.rcs-sms-pill.is-warn strong { color: #fbbf24; }
+
+.rcs-flow-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rcs-json-pre {
+  margin: 0;
+  padding: 8px;
+  background: #090d12;
+  border: 1px solid var(--studio-border);
+  border-radius: 5px;
+  font-size: 10.5px;
+  color: #93c5fd;
+  max-height: 360px;
+  overflow: auto;
+}
+
+/* ==========================================================================
+   Module 2: RcsPhonePreview Styles (Authentic Phone & OS Simulation)
+   ========================================================================== */
+.rcs-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.rcs-zoom-bar {
+  display: inline-flex;
+  align-items: center;
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.rcs-zoom-btn {
+  background: transparent;
+  border: none;
+  color: var(--studio-text-muted);
+  padding: 3px 5px;
+  cursor: pointer;
+  display: inline-flex;
+}
+
+.rcs-zoom-btn:hover {
+  color: #fff;
+  background: var(--studio-panel-elevated);
+}
+
+.rcs-zoom-readout {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--studio-border);
+  border-right: 1px solid var(--studio-border);
+  color: var(--studio-text);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.rcs-device-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  background: #10151d;
+  border-bottom: 1px solid var(--studio-border);
+  font-size: 10.5px;
+  color: var(--studio-text-muted);
+  flex-shrink: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rcs-gesture-hint {
+  color: #38bdf8;
+}
+
+.rcs-stage-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px;
+  overflow: auto;
+  background: radial-gradient(circle at center, #1b2432 0%, #0f141c 100%);
+}
+
+.rcs-phone-scale-container {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Phone Physical Bezel & Screen Variables */
+.rcs-phone-hardware {
+  position: relative;
+  transform: scale(var(--phone-scale, 0.76));
+  transform-origin: top center;
+  background: #ffffff;
+  color: #1f1f1f;
+  border: 10px solid #1e242d;
+  box-shadow:
+    0 0 0 2px #3b4454,
+    0 20px 50px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+}
+
+/* Theme Palettes (Google Messages Material 3 Light & Dark) */
+.rcs-phone-hardware.is-theme-light {
+  --app-bg: #ffffff;
+  --app-surface: #eff2f7;
+  --app-surface-2: #e8edf4;
+  --app-text: #1f1f1f;
+  --app-text-sub: #444746;
+  --app-border: #e1e3e6;
+  --card-bg: #eff2f7;
+  --action-btn-bg: #ffffff;
+  --action-ico-bg: #e8edf4;
+  --verified-color: #1b6ef3;
+  --voice-fab-bg: #c4eed0;
+  --voice-fab-fg: #0f5223;
+}
+
+.rcs-phone-hardware.is-theme-dark {
+  --app-bg: #111318;
+  --app-surface: #1e232c;
+  --app-surface-2: #282f3d;
+  --app-text: #e3e3e3;
+  --app-text-sub: #9aa0a6;
+  --app-border: #2d323b;
+  --card-bg: #1e232c;
+  --action-btn-bg: #2b313e;
+  --action-ico-bg: #384050;
+  --verified-color: #669df6;
+  --voice-fab-bg: #1e5631;
+  --voice-fab-fg: #bbf7d0;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* Camera Cutouts */
+.rcs-hw-cutout {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.rcs-phone-hardware.is-cutout-punch-center .rcs-hw-cutout {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #090b0e;
+}
+
+.rcs-phone-hardware.is-cutout-punch-center-small .rcs-hw-cutout {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #090b0e;
+}
+
+.rcs-phone-hardware.is-cutout-dynamic-island .rcs-hw-cutout {
+  top: 6px;
+  width: 92px;
+  height: 22px;
+  border-radius: 14px;
+  background: #050608;
+}
+
+.rcs-phone-hardware.is-cutout-fold-crease::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(to right, rgba(0,0,0,0.06), rgba(255,255,255,0.08), rgba(0,0,0,0.06));
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* 1. OS Status Bar (Matches 12:04 + 4G + Battery in user screenshots) */
+.rcs-os-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 4px 18px 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rcs-status-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--app-text);
+}
+
+.rcs-status-net {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rcs-status-battery {
+  width: 8px;
+  height: 13px;
+  border: 1.4px solid currentColor;
+  border-radius: 2px;
+  padding: 1px;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+}
+
+.rcs-status-battery::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 1.5px;
+  right: 1.5px;
+  height: 2px;
+  background: currentColor;
+}
+
+.rcs-battery-fill {
+  width: 100%;
+  background: currentColor;
+}
+
+/* 2. Messaging App Top Header (Matches Google Messages, Samsung One UI, iOS 18) */
+.rcs-app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 10px;
+  background: var(--app-bg);
+  color: var(--app-text);
+  flex-shrink: 0;
+}
+
+.rcs-nav-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--app-text);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rcs-header-avatar {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.rcs-header-avatar.is-rounded {
+  border-radius: 10px;
+}
+
+.rcs-header-avatar.is-circle {
+  border-radius: 50%;
+}
+
+.rcs-header-title-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rcs-header-title {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rcs-verified-badge {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: var(--verified-color);
+  flex-shrink: 0;
+}
+
+.rcs-verified-badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* iOS 18 Header Variant */
+.rcs-app-header.is-ios {
+  height: 64px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--app-border);
+  padding: 0 14px;
+}
+
+.rcs-nav-back-ios,
+.rcs-nav-info-ios {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.rcs-ios-center-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rcs-ios-center-brand .rcs-header-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.rcs-ios-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.rcs-ios-brand-row .rcs-header-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 3. Scrollable Conversation Feed */
+.rcs-chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 8px 14px;
+  background: var(--app-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-behavior: smooth;
+}
+
+/* Large Agent Profile Header (Matches TIPOS Screenshot_20260617-120218.png) */
+.rcs-agent-hero-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 18px 16px;
+  margin: 0 -8px 4px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.rcs-agent-hero-logo {
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.rcs-agent-hero-logo.is-rounded {
+  border-radius: 16px;
+}
+
+.rcs-agent-hero-logo.is-circle {
+  border-radius: 50%;
+}
+
+.rcs-agent-hero-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--app-text);
+  margin-bottom: 6px;
+}
+
+.rcs-agent-hero-tagline {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--app-text-sub);
+  max-width: 310px;
+}
+
+.rcs-chat-timestamp,
+.rcs-chat-system-notice {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--app-text-sub);
+  margin: 2px 0;
+}
+
+/* Message Container & Rich Card (Matches Google Messages M3) */
+.rcs-message-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rcs-stacked-cards-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rcs-rich-card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: rcsBubbleIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Samsung One UI Skin Variation */
+.rcs-phone-hardware.is-skin-samsung_messages_oneui .rcs-rich-card {
+  border-radius: 22px;
+  border: 1px solid var(--app-border);
+}
+
+/* Apple iOS 18 Skin Variation */
+.rcs-phone-hardware.is-skin-ios_18_messages .rcs-rich-card {
+  border-radius: 20px;
+}
+
+.rcs-card-media-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #cbd5e1;
+  cursor: zoom-in;
+}
+
+.rcs-card-media-el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.rcs-media-type-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Safe-Zone Crop Guide Overlay inside Phone Preview */
+.rcs-preview-crop-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(245, 158, 11, 0.85);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  pointer-events: none;
+}
+
+.rcs-preview-crop-safe {
+  background: rgba(15, 23, 42, 0.82);
+  color: #fbbf24;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.rcs-card-content {
+  padding: 13px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rcs-card-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--app-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rcs-card-desc {
+  font-size: 13.8px;
+  line-height: 1.42;
+  color: var(--app-text);
+  word-break: break-word;
+}
+
+.rcs-more-link {
+  background: none;
+  border: none;
+  color: var(--verified-color);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Stacked White Pill Action Buttons (Exact match to DOXXbet & Telekom screenshots!) */
+.rcs-card-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.rcs-card-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px 14px 7px 9px;
+  background: var(--action-btn-bg);
+  color: var(--app-text);
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 13.8px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.rcs-card-action-btn:hover {
+  filter: brightness(0.97);
+}
+
+.rcs-card-action-btn:active {
+  transform: scale(0.985);
+}
+
+.rcs-action-circle-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--action-ico-bg);
+  color: var(--app-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rcs-action-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Rich Card Carousel (Matches Telekom Screenshot_20260617-120327.png with peeking neighbor cards!) */
+.rcs-carousel-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 -8px;
+  padding: 2px 34px 4px;
+  scroll-snap-type: x mandatory;
+  cursor: grab;
+  scrollbar-width: none;
+}
+
+.rcs-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.rcs-carousel-track.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.rcs-rich-card.is-carousel-item {
+  width: var(--carousel-card-w, 264px);
+  min-width: var(--carousel-card-w, 264px);
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  justify-content: space-between;
+}
+
+.rcs-rich-card.is-carousel-item .rcs-card-content {
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* Horizontal Rich Card (Left / Right Side Thumbnail) */
+.rcs-rich-card.is-horizontal {
+  padding: 12px;
+  gap: 10px;
+}
+
+.rcs-horiz-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.rcs-rich-card.is-align-right .rcs-horiz-top {
+  flex-direction: row-reverse;
+}
+
+.rcs-horiz-thumb {
+  position: relative;
+  width: 106px;
+  height: 118px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: zoom-in;
+}
+
+.rcs-horiz-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Conversational Text + Floating Suggestion Chips */
+.rcs-plain-rcs-bubble {
+  background: var(--card-bg);
+  padding: 11px 14px;
+  border-radius: 18px 18px 18px 6px;
+  max-width: 88%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rcs-chips-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 2px 2px;
+}
+
+.rcs-floating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 18px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* SMS Fallback Bubble */
+.rcs-sms-bubble-card {
+  background: var(--card-bg);
+  padding: 12px 14px;
+  border-radius: 18px 18px 18px 4px;
+  max-width: 90%;
+  border-left: 3px solid #f59e0b;
+}
+
+.rcs-sms-text {
+  font-size: 13.8px;
+  line-height: 1.42;
+  color: var(--app-text);
+}
+
+.rcs-sms-meta-tag {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--app-text-sub);
+  font-weight: 600;
+}
+
+.rcs-msg-delivery-time {
+  font-size: 11px;
+  color: var(--app-text-sub);
+  padding-left: 10px;
+}
+
+/* Interactive User / Agent Reply Bubbles */
+.rcs-chat-bubble-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: rcsBubbleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rcs-chat-bubble-row.is-user {
+  align-items: flex-end;
+}
+
+.rcs-chat-bubble-row.is-agent {
+  align-items: flex-start;
+}
+
+.rcs-chat-bubble {
+  max-width: 82%;
+  padding: 9px 14px;
+  border-radius: 18px;
+  font-size: 13.8px;
+  line-height: 1.38;
+}
+
+.rcs-chat-bubble.is-user {
+  background: var(--user-bubble-bg, #0b57d0);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.rcs-chat-bubble.is-agent {
+  background: var(--card-bg);
+  color: var(--app-text);
+  border-bottom-left-radius: 4px;
+}
+
+.rcs-bubble-time {
+  font-size: 10px;
+  color: var(--app-text-sub);
+  padding: 0 6px;
+}
+
+/* Animated Typing Indicator */
+.rcs-typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--card-bg);
+  padding: 10px 14px;
+  border-radius: 16px;
+  width: fit-content;
+}
+
+.rcs-typing-indicator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--app-text-sub);
+  animation: rcsTypingBounce 1.1s infinite ease-in-out;
+}
+
+.rcs-typing-indicator span:nth-child(2) { animation-delay: 0.18s; }
+.rcs-typing-indicator span:nth-child(3) { animation-delay: 0.36s; }
+
+/* Floating Scroll-to-Bottom Button (Matches TIPOS screenshot) */
+.rcs-floating-scroll-btn {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--action-btn-bg);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 15;
+}
+
+/* Spam & Safety Shield Banner (Matches Telekom screenshot) */
+.rcs-spam-shield-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  padding: 8px 12px;
+  background: var(--app-surface);
+  border-radius: 22px;
+  font-size: 12px;
+  color: var(--app-text);
+  flex-shrink: 0;
+}
+
+.rcs-shield-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0b57d0;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rcs-shield-ico .rcs-ico {
+  width: 15px;
+  height: 15px;
+}
+
+.rcs-shield-text {
+  flex: 1;
+}
+
+.rcs-shield-link {
+  color: #0b57d0;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.rcs-shield-close {
+  background: none;
+  border: none;
+  color: var(--app-text-sub);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* 4. Bottom Compose Bar (Matches Google Messages screenshot) */
+.rcs-compose-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 6px;
+  background: var(--app-bg);
+  flex-shrink: 0;
+}
+
+.rcs-google-input-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 10px;
+  background: var(--app-surface);
+  border-radius: 24px;
+}
+
+.rcs-compose-ico-btn {
+  background: none;
+  border: none;
+  color: var(--app-text-sub);
+  padding: 2px;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.rcs-compose-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--app-text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.rcs-compose-input::placeholder {
+  color: var(--app-text-sub);
+}
+
+.rcs-voice-fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--voice-fab-bg);
+  color: var(--voice-fab-fg);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* iOS Compose Bar */
+.rcs-compose-bar.is-ios {
+  padding: 6px 12px;
+}
+
+.rcs-ios-plus-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--app-surface);
+  border: none;
+  color: var(--app-text-sub);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.rcs-ios-input-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid var(--app-border);
+  background: var(--app-bg);
+}
+
+/* 5. Bottom Gesture Bar */
+.rcs-os-gesture-bar {
+  height: 16px;
+  background: var(--app-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rcs-gesture-pill {
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--app-text-sub);
+  opacity: 0.55;
+}
+
+/* In-Phone Modal Overlays (Lightbox / Webview / Custom Preset) */
+.rcs-phone-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 13, 20, 0.76);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: rcsFadeIn 0.16s ease;
+}
+
+.rcs-lightbox-sheet,
+.rcs-action-sheet {
+  width: 100%;
+  background: var(--app-bg);
+  color: var(--app-text);
+  border-radius: 20px 20px 0 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 85%;
+}
+
+.rcs-sheet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rcs-sheet-close {
+  background: var(--app-surface);
+  border: none;
+  color: var(--app-text);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.rcs-lightbox-img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #000;
+}
+
+.rcs-lightbox-foot {
+  font-size: 11px;
+  color: var(--app-text-sub);
+  text-align: center;
+}
+
+.rcs-webview-url-bar {
+  background: var(--app-surface);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--app-text-sub);
+  font-family: monospace;
+}
+
+.rcs-webview-sim {
+  padding: 20px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rcs-webview-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--action-ico-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Real Screenshot Reference Side-by-Side Panel */
+.rcs-ref-screenshot-panel {
+  width: 270px;
+  height: 96%;
+  background: #121821;
+  border: 1px solid var(--studio-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.rcs-ref-head {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--studio-border);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rcs-ref-pills {
+  display: flex;
+  gap: 3px;
+}
+
+.rcs-ref-pill {
+  flex: 1;
+  font-size: 9.5px;
+  padding: 3px 4px;
+  background: var(--studio-panel-elevated);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rcs-ref-pill.is-active {
+  background: var(--studio-accent);
+  color: #fff;
+  border-color: var(--studio-accent);
+}
+
+.rcs-ref-img-wrap {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6px;
+}
+
+.rcs-ref-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Bottom Telemetry / Tracking Status Bar (Future Reporting System Integration) */
+.rcs-telemetry-footer {
+  height: 28px;
+  padding: 0 12px;
+  background: #0b0f16;
+  border-top: 1px solid var(--studio-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--studio-text-muted);
+  flex-shrink: 0;
+}
+
+.rcs-telemetry-stream {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.rcs-telemetry-badge {
+  color: #34d399;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rcs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+@keyframes rcsBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rcsTypingBounce {
+  0%, 80%, 100% { transform: scale(0.75); opacity: 0.45; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes rcsFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 960px) {
+  .rcs-workbench {
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+  .rcs-workbench-grid {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+}
