@@ -831,6 +831,18 @@ html, body {
   border: 1px solid #1e293b;
 }
 
+.rcs-crop-minimap.is-interactive {
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
+}
+
+.rcs-crop-minimap.is-interactive:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+  transform: translateY(-1px);
+}
+
 .rcs-crop-stage {
   position: relative;
   max-width: 100%;
@@ -859,10 +871,233 @@ html, body {
   font-size: 8.5px;
   font-weight: 800;
   color: #fff;
-  background: rgba(15, 23, 42, 0.84);
-  padding: 2px 5px;
+  background: rgba(15, 23, 42, 0.88);
+  padding: 2px 6px;
   border-radius: 3px;
   letter-spacing: 0.03em;
+}
+
+/* Floating Safe Visible Zone & Proportions Inspector Modal */
+.rcs-safezone-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(9, 13, 20, 0.78);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: rcsFadeIn 0.16s ease;
+}
+
+.rcs-safezone-modal-card {
+  width: 100%;
+  max-width: 780px;
+  background: #131b26;
+  border: 1px solid #2c3a4f;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  color: var(--studio-text);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rcs-safezone-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #182231;
+  border-bottom: 1px solid #263447;
+}
+
+.rcs-safezone-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rcs-safezone-modal-title .rcs-ico {
+  width: 22px;
+  height: 22px;
+  color: #38bdf8;
+}
+
+.rcs-safezone-modal-title h3 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.rcs-safezone-modal-title p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.rcs-safezone-modal-body {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.rcs-safezone-visual-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #0a0f16;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.rcs-safezone-full-frame {
+  position: relative;
+  width: 100%;
+  max-height: 290px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(239, 68, 68, 0.85);
+}
+
+.rcs-safezone-active-window {
+  border: 2px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  box-shadow: 0 0 0 999px rgba(239, 68, 68, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.rcs-safezone-badge-center {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.7);
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.rcs-safezone-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.rcs-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rcs-dot-green,
+.rcs-dot-red {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.rcs-dot-green {
+  background: rgba(34, 197, 94, 0.45);
+  border: 1.5px solid #22c55e;
+}
+
+.rcs-dot-red {
+  background: rgba(239, 68, 68, 0.55);
+  border: 1.5px dashed #ef4444;
+}
+
+.rcs-safezone-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rcs-safezone-info-box {
+  background: #172130;
+  border: 1px solid #263449;
+  border-radius: 9px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rcs-safezone-info-box.is-highlight-green {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.rcs-safezone-info-box.is-highlight-blue {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.rcs-sz-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.rcs-sz-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.rcs-sz-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.rcs-sz-dual-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.rcs-sz-px-pill {
+  background: #0d141e;
+  border: 1px solid #2b3b52;
+  border-radius: 7px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcs-sz-px-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.04em;
+}
+
+.rcs-sz-px-pill strong {
+  font-size: 12px;
+  color: #f1f5f9;
 }
 
 .rcs-crop-stats {
@@ -4089,6 +4324,7 @@ class RcsTemplateChooser {
       activePresetId: defaultPreset.id,
       activeCardIndex: 0,
       showCropGuides: options.showCropGuides ?? false,
+      showSafeZoneModal: false,
       agentDetected: true,
       /**
        * Tracks which accordion modules in the vertical stack are currently collapsed.
@@ -4450,6 +4686,8 @@ class RcsTemplateChooser {
 
           ${this.renderJsonModule({ payload, agent })}
         </div>
+
+        ${this.state.showSafeZoneModal ? this.renderSafeZoneFloatingModal({ payload, card, isCarousel, isHorizontal, cropInfo }) : ''}
       </div>
     `;
 
@@ -4457,6 +4695,137 @@ class RcsTemplateChooser {
     if (newBody && prevScrollTop > 0) {
       newBody.scrollTop = prevScrollTop;
     }
+  }
+
+  /**
+   * Renders an informative floating modal when the user clicks the "SAFE VISIBLE ZONE" minimap,
+   * showing:
+   *  1. The whole picture with the green visible zone and red cropped edges clearly highlighted.
+   *  2. The visible proportions vs. the recommended proportions of the picture.
+   *  3. Both recommended sizes in pixels (Primary & Alternative pixel dimensions).
+   */
+  renderSafeZoneFloatingModal({ payload, card, isCarousel, isHorizontal, cropInfo }) {
+    const specKey = isHorizontal ? 'HORIZONTAL' : (payload.mediaHeight || 'MEDIUM');
+    const recPresets = {
+      SHORT: {
+        slotLabel: 'Short Vertical Media (112 dp)',
+        recAspect: '3:1 (or 16:9)',
+        recSizePrimary: '1440 × 480 px (3:1 Banner)',
+        recSizeSecondary: '1280 × 720 px (16:9 HD)'
+      },
+      MEDIUM: {
+        slotLabel: 'Medium Vertical Media (168 dp)',
+        recAspect: '2:1 (or 16:9)',
+        recSizePrimary: '1440 × 720 px (2:1 Optimal)',
+        recSizeSecondary: '1280 × 720 px (16:9 HD)'
+      },
+      TALL: {
+        slotLabel: 'Tall Vertical Media (264 dp)',
+        recAspect: '4:3 (or 1:1)',
+        recSizePrimary: '1440 × 1080 px (4:3 Hero)',
+        recSizeSecondary: '1080 × 1080 px (1:1 Square)'
+      },
+      HORIZONTAL: {
+        slotLabel: `Horizontal Side Thumbnail (${payload.thumbnailAlignment || 'LEFT'} • 128 dp)`,
+        recAspect: '3:4 (or 1:1)',
+        recSizePrimary: '720 × 960 px (3:4 Portrait)',
+        recSizeSecondary: '720 × 720 px (1:1 Square)'
+      }
+    };
+    const rec = recPresets[specKey] || recPresets.MEDIUM;
+
+    // Format current & visible proportions
+    const formatRatio = (r) => {
+      if (Math.abs(r - 1) < 0.04) return '1:1 (1.00:1)';
+      if (Math.abs(r - 4 / 3) < 0.04) return '4:3 (1.33:1)';
+      if (Math.abs(r - 3 / 4) < 0.04) return '3:4 (0.75:1)';
+      if (Math.abs(r - 16 / 9) < 0.05) return '16:9 (1.78:1)';
+      if (Math.abs(r - 2) < 0.05) return '2:1 (2.00:1)';
+      if (Math.abs(r - 3) < 0.08) return '3:1 (3.00:1)';
+      return `${r.toFixed(2)}:1`;
+    };
+
+    const visibleW = cropInfo.cropAxis === 'horizontal'
+      ? Math.round(cropInfo.srcW * cropInfo.visibleFraction)
+      : cropInfo.srcW;
+    const visibleH = cropInfo.cropAxis === 'vertical'
+      ? Math.round(cropInfo.srcH * cropInfo.visibleFraction)
+      : cropInfo.srcH;
+
+    return `
+      <div class="rcs-safezone-modal-backdrop" id="rcs-safezone-modal-backdrop" role="dialog" aria-modal="true" aria-label="Safe Visible Zone & Proportions Inspector">
+        <div class="rcs-safezone-modal-card" onclick="event.stopPropagation()">
+          <div class="rcs-safezone-modal-head">
+            <div class="rcs-safezone-modal-title">
+              ${getIcon('crop')}
+              <div>
+                <h3>Safe Visible Zone &amp; Media Proportions Inspector</h3>
+                <p>${this.escapeHtml(rec.slotLabel)}${isCarousel ? ` • Carousel (${payload.cardWidth} Width)` : ''}</p>
+              </div>
+            </div>
+            <button type="button" class="rcs-sheet-close" id="rcs-close-safezone-modal" aria-label="Close">✕</button>
+          </div>
+
+          <div class="rcs-safezone-modal-body">
+            <!-- Left/Top: Whole Picture with Visible Safe Zone Overlay -->
+            <div class="rcs-safezone-visual-stage">
+              <div class="rcs-safezone-full-frame" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
+                <div class="rcs-safezone-active-window is-${cropInfo.cropAxis}" style="
+                  ${cropInfo.cropAxis === 'horizontal'
+                    ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                    : cropInfo.cropAxis === 'vertical'
+                      ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                      : 'width: 100%; height: 100%;'}
+                ">
+                  <span class="rcs-safezone-badge-center">
+                    SAFE VISIBLE ZONE (${Math.round(cropInfo.visibleFraction * 100)}% Shown • ${visibleW} × ${visibleH} px)
+                  </span>
+                </div>
+              </div>
+              <div class="rcs-safezone-legend">
+                <span class="rcs-legend-item"><i class="rcs-dot-green"></i> Visible Safe Area (${visibleW}×${visibleH} px)</span>
+                <span class="rcs-legend-item"><i class="rcs-dot-red"></i> Center-Cropped Overflow (${cropInfo.croppedPercent}% clipped)</span>
+              </div>
+            </div>
+
+            <!-- Right/Bottom: Informative Proportions & Both Recommended Pixel Sizes -->
+            <div class="rcs-safezone-info-grid">
+              <div class="rcs-safezone-info-box">
+                <span class="rcs-sz-label">Whole Picture Size &amp; Ratio</span>
+                <strong class="rcs-sz-val">${cropInfo.srcW} × ${cropInfo.srcH} px</strong>
+                <small class="rcs-sz-sub">Source Aspect: ${formatRatio(cropInfo.srcRatio)}</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-highlight-green">
+                <span class="rcs-sz-label">Visible Proportions on Phone</span>
+                <strong class="rcs-sz-val">${formatRatio(cropInfo.targetRatio)}</strong>
+                <small class="rcs-sz-sub">Visible Window: ${visibleW} × ${visibleH} px (${100 - cropInfo.croppedPercent}% of image)</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-highlight-blue">
+                <span class="rcs-sz-label">Recommended Proportions</span>
+                <strong class="rcs-sz-val">${rec.recAspect}</strong>
+                <small class="rcs-sz-sub">Zero-crop center-safe RBM aspect ratio</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-span-full">
+                <span class="rcs-sz-label">Recommended Sizes in Pixels (Both Options)</span>
+                <div class="rcs-sz-dual-pills">
+                  <div class="rcs-sz-px-pill">
+                    <span class="rcs-sz-px-tag">OPTION 1 (PRIMARY)</span>
+                    <strong>${rec.recSizePrimary}</strong>
+                  </div>
+                  <div class="rcs-sz-px-pill">
+                    <span class="rcs-sz-px-tag">OPTION 2 (ALTERNATIVE)</span>
+                    <strong>${rec.recSizeSecondary}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   renderTemplatesModule(currentTemplate, payload) {
@@ -4615,23 +4984,24 @@ class RcsTemplateChooser {
         ` : ''}
       </div>
 
-      <!-- Interactive Crop & File Size Diagnostic Box -->
+      <!-- Interactive Crop & File Size Diagnostic Box (Click SAFE VISIBLE ZONE to open Floating Inspector) -->
       <div class="rcs-crop-diagnostic">
-        <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
+        <button type="button"
+                class="rcs-crop-minimap is-interactive"
+                id="rcs-open-safezone-modal-btn"
+                title="Click to open floating Safe Visible Zone & Proportions Inspector">
           <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
-            ${showCropGuides ? `
-              <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
-                ${cropInfo.cropAxis === 'horizontal'
-                  ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
-                  : cropInfo.cropAxis === 'vertical'
-                    ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
-                    : 'width: 100%; height: 100%;'}
-              ">
-                <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
-              </div>
-            ` : ''}
+            <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
+              ${cropInfo.cropAxis === 'horizontal'
+                ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                : cropInfo.cropAxis === 'vertical'
+                  ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                  : 'width: 100%; height: 100%;'}
+            ">
+              <span class="rcs-crop-safe-tag">🔍 SAFE VISIBLE ZONE</span>
+            </div>
           </div>
-        </div>
+        </button>
 
         <div class="rcs-crop-stats">
           <div class="rcs-spec-pill">
@@ -5129,6 +5499,33 @@ class RcsTemplateChooser {
       cropToggle.addEventListener('change', (e) => {
         this.state.showCropGuides = e.target.checked;
         this.emitChange('crop-guide-toggle');
+      });
+    }
+
+    // Open / Close Safe Visible Zone Floating Inspector Modal
+    const openSafeZoneModalBtn = this.root.querySelector('#rcs-open-safezone-modal-btn');
+    if (openSafeZoneModalBtn) {
+      openSafeZoneModalBtn.addEventListener('click', () => {
+        this.state.showSafeZoneModal = true;
+        this.render();
+        this.attachEvents();
+      });
+    }
+
+    const closeSafeZoneBtn = this.root.querySelector('#rcs-close-safezone-modal');
+    const closeSafeZoneBackdrop = this.root.querySelector('#rcs-safezone-modal-backdrop');
+    if (closeSafeZoneBtn) {
+      closeSafeZoneBtn.addEventListener('click', () => {
+        this.state.showSafeZoneModal = false;
+        this.render();
+        this.attachEvents();
+      });
+    }
+    if (closeSafeZoneBackdrop) {
+      closeSafeZoneBackdrop.addEventListener('click', () => {
+        this.state.showSafeZoneModal = false;
+        this.render();
+        this.attachEvents();
       });
     }
 

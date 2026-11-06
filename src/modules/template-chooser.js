@@ -63,6 +63,7 @@ export class RcsTemplateChooser {
       activePresetId: defaultPreset.id,
       activeCardIndex: 0,
       showCropGuides: options.showCropGuides ?? false,
+      showSafeZoneModal: false,
       agentDetected: true,
       /**
        * Tracks which accordion modules in the vertical stack are currently collapsed.
@@ -424,6 +425,8 @@ export class RcsTemplateChooser {
 
           ${this.renderJsonModule({ payload, agent })}
         </div>
+
+        ${this.state.showSafeZoneModal ? this.renderSafeZoneFloatingModal({ payload, card, isCarousel, isHorizontal, cropInfo }) : ''}
       </div>
     `;
 
@@ -431,6 +434,137 @@ export class RcsTemplateChooser {
     if (newBody && prevScrollTop > 0) {
       newBody.scrollTop = prevScrollTop;
     }
+  }
+
+  /**
+   * Renders an informative floating modal when the user clicks the "SAFE VISIBLE ZONE" minimap,
+   * showing:
+   *  1. The whole picture with the green visible zone and red cropped edges clearly highlighted.
+   *  2. The visible proportions vs. the recommended proportions of the picture.
+   *  3. Both recommended sizes in pixels (Primary & Alternative pixel dimensions).
+   */
+  renderSafeZoneFloatingModal({ payload, card, isCarousel, isHorizontal, cropInfo }) {
+    const specKey = isHorizontal ? 'HORIZONTAL' : (payload.mediaHeight || 'MEDIUM');
+    const recPresets = {
+      SHORT: {
+        slotLabel: 'Short Vertical Media (112 dp)',
+        recAspect: '3:1 (or 16:9)',
+        recSizePrimary: '1440 × 480 px (3:1 Banner)',
+        recSizeSecondary: '1280 × 720 px (16:9 HD)'
+      },
+      MEDIUM: {
+        slotLabel: 'Medium Vertical Media (168 dp)',
+        recAspect: '2:1 (or 16:9)',
+        recSizePrimary: '1440 × 720 px (2:1 Optimal)',
+        recSizeSecondary: '1280 × 720 px (16:9 HD)'
+      },
+      TALL: {
+        slotLabel: 'Tall Vertical Media (264 dp)',
+        recAspect: '4:3 (or 1:1)',
+        recSizePrimary: '1440 × 1080 px (4:3 Hero)',
+        recSizeSecondary: '1080 × 1080 px (1:1 Square)'
+      },
+      HORIZONTAL: {
+        slotLabel: `Horizontal Side Thumbnail (${payload.thumbnailAlignment || 'LEFT'} • 128 dp)`,
+        recAspect: '3:4 (or 1:1)',
+        recSizePrimary: '720 × 960 px (3:4 Portrait)',
+        recSizeSecondary: '720 × 720 px (1:1 Square)'
+      }
+    };
+    const rec = recPresets[specKey] || recPresets.MEDIUM;
+
+    // Format current & visible proportions
+    const formatRatio = (r) => {
+      if (Math.abs(r - 1) < 0.04) return '1:1 (1.00:1)';
+      if (Math.abs(r - 4 / 3) < 0.04) return '4:3 (1.33:1)';
+      if (Math.abs(r - 3 / 4) < 0.04) return '3:4 (0.75:1)';
+      if (Math.abs(r - 16 / 9) < 0.05) return '16:9 (1.78:1)';
+      if (Math.abs(r - 2) < 0.05) return '2:1 (2.00:1)';
+      if (Math.abs(r - 3) < 0.08) return '3:1 (3.00:1)';
+      return `${r.toFixed(2)}:1`;
+    };
+
+    const visibleW = cropInfo.cropAxis === 'horizontal'
+      ? Math.round(cropInfo.srcW * cropInfo.visibleFraction)
+      : cropInfo.srcW;
+    const visibleH = cropInfo.cropAxis === 'vertical'
+      ? Math.round(cropInfo.srcH * cropInfo.visibleFraction)
+      : cropInfo.srcH;
+
+    return `
+      <div class="rcs-safezone-modal-backdrop" id="rcs-safezone-modal-backdrop" role="dialog" aria-modal="true" aria-label="Safe Visible Zone & Proportions Inspector">
+        <div class="rcs-safezone-modal-card" onclick="event.stopPropagation()">
+          <div class="rcs-safezone-modal-head">
+            <div class="rcs-safezone-modal-title">
+              ${getIcon('crop')}
+              <div>
+                <h3>Safe Visible Zone &amp; Media Proportions Inspector</h3>
+                <p>${this.escapeHtml(rec.slotLabel)}${isCarousel ? ` • Carousel (${payload.cardWidth} Width)` : ''}</p>
+              </div>
+            </div>
+            <button type="button" class="rcs-sheet-close" id="rcs-close-safezone-modal" aria-label="Close">✕</button>
+          </div>
+
+          <div class="rcs-safezone-modal-body">
+            <!-- Left/Top: Whole Picture with Visible Safe Zone Overlay -->
+            <div class="rcs-safezone-visual-stage">
+              <div class="rcs-safezone-full-frame" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
+                <div class="rcs-safezone-active-window is-${cropInfo.cropAxis}" style="
+                  ${cropInfo.cropAxis === 'horizontal'
+                    ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                    : cropInfo.cropAxis === 'vertical'
+                      ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                      : 'width: 100%; height: 100%;'}
+                ">
+                  <span class="rcs-safezone-badge-center">
+                    SAFE VISIBLE ZONE (${Math.round(cropInfo.visibleFraction * 100)}% Shown • ${visibleW} × ${visibleH} px)
+                  </span>
+                </div>
+              </div>
+              <div class="rcs-safezone-legend">
+                <span class="rcs-legend-item"><i class="rcs-dot-green"></i> Visible Safe Area (${visibleW}×${visibleH} px)</span>
+                <span class="rcs-legend-item"><i class="rcs-dot-red"></i> Center-Cropped Overflow (${cropInfo.croppedPercent}% clipped)</span>
+              </div>
+            </div>
+
+            <!-- Right/Bottom: Informative Proportions & Both Recommended Pixel Sizes -->
+            <div class="rcs-safezone-info-grid">
+              <div class="rcs-safezone-info-box">
+                <span class="rcs-sz-label">Whole Picture Size &amp; Ratio</span>
+                <strong class="rcs-sz-val">${cropInfo.srcW} × ${cropInfo.srcH} px</strong>
+                <small class="rcs-sz-sub">Source Aspect: ${formatRatio(cropInfo.srcRatio)}</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-highlight-green">
+                <span class="rcs-sz-label">Visible Proportions on Phone</span>
+                <strong class="rcs-sz-val">${formatRatio(cropInfo.targetRatio)}</strong>
+                <small class="rcs-sz-sub">Visible Window: ${visibleW} × ${visibleH} px (${100 - cropInfo.croppedPercent}% of image)</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-highlight-blue">
+                <span class="rcs-sz-label">Recommended Proportions</span>
+                <strong class="rcs-sz-val">${rec.recAspect}</strong>
+                <small class="rcs-sz-sub">Zero-crop center-safe RBM aspect ratio</small>
+              </div>
+
+              <div class="rcs-safezone-info-box is-span-full">
+                <span class="rcs-sz-label">Recommended Sizes in Pixels (Both Options)</span>
+                <div class="rcs-sz-dual-pills">
+                  <div class="rcs-sz-px-pill">
+                    <span class="rcs-sz-px-tag">OPTION 1 (PRIMARY)</span>
+                    <strong>${rec.recSizePrimary}</strong>
+                  </div>
+                  <div class="rcs-sz-px-pill">
+                    <span class="rcs-sz-px-tag">OPTION 2 (ALTERNATIVE)</span>
+                    <strong>${rec.recSizeSecondary}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   renderTemplatesModule(currentTemplate, payload) {
@@ -589,23 +723,24 @@ export class RcsTemplateChooser {
         ` : ''}
       </div>
 
-      <!-- Interactive Crop & File Size Diagnostic Box -->
+      <!-- Interactive Crop & File Size Diagnostic Box (Click SAFE VISIBLE ZONE to open Floating Inspector) -->
       <div class="rcs-crop-diagnostic">
-        <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
+        <button type="button"
+                class="rcs-crop-minimap is-interactive"
+                id="rcs-open-safezone-modal-btn"
+                title="Click to open floating Safe Visible Zone & Proportions Inspector">
           <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
-            ${showCropGuides ? `
-              <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
-                ${cropInfo.cropAxis === 'horizontal'
-                  ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
-                  : cropInfo.cropAxis === 'vertical'
-                    ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
-                    : 'width: 100%; height: 100%;'}
-              ">
-                <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
-              </div>
-            ` : ''}
+            <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
+              ${cropInfo.cropAxis === 'horizontal'
+                ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                : cropInfo.cropAxis === 'vertical'
+                  ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                  : 'width: 100%; height: 100%;'}
+            ">
+              <span class="rcs-crop-safe-tag">🔍 SAFE VISIBLE ZONE</span>
+            </div>
           </div>
-        </div>
+        </button>
 
         <div class="rcs-crop-stats">
           <div class="rcs-spec-pill">
@@ -1103,6 +1238,33 @@ export class RcsTemplateChooser {
       cropToggle.addEventListener('change', (e) => {
         this.state.showCropGuides = e.target.checked;
         this.emitChange('crop-guide-toggle');
+      });
+    }
+
+    // Open / Close Safe Visible Zone Floating Inspector Modal
+    const openSafeZoneModalBtn = this.root.querySelector('#rcs-open-safezone-modal-btn');
+    if (openSafeZoneModalBtn) {
+      openSafeZoneModalBtn.addEventListener('click', () => {
+        this.state.showSafeZoneModal = true;
+        this.render();
+        this.attachEvents();
+      });
+    }
+
+    const closeSafeZoneBtn = this.root.querySelector('#rcs-close-safezone-modal');
+    const closeSafeZoneBackdrop = this.root.querySelector('#rcs-safezone-modal-backdrop');
+    if (closeSafeZoneBtn) {
+      closeSafeZoneBtn.addEventListener('click', () => {
+        this.state.showSafeZoneModal = false;
+        this.render();
+        this.attachEvents();
+      });
+    }
+    if (closeSafeZoneBackdrop) {
+      closeSafeZoneBackdrop.addEventListener('click', () => {
+        this.state.showSafeZoneModal = false;
+        this.render();
+        this.attachEvents();
       });
     }
 
