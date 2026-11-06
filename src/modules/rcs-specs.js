@@ -885,13 +885,17 @@ export const REAL_CAMPAIGN_PRESETS = {
       verified: true,
       tagline: 'Správa budov v meste Žilina',
       color: '#006a64',
-      avatarShape: 'circle',
-      logoUrl: createLogoSvgDataUri({ bg: '#0b4f8a', text: 'GB', sub: 'ŽILINA' }),
-      showAgentHeader: true,
-      showRbmChatNotice: true,
-      timestampLabel: 'Oct 15, 2024, 15:28',
-      messageTime: '11:36',
-      showSpamBanner: false,
+      avatarShape: 'rounded',
+      logoUrl: (`data:image/svg+xml;utf8,` + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+        <rect width="160" height="160" rx="38" fill="#ffffff"/>
+        <text x="62" y="108" fill="#FF5500" font-family="system-ui, -apple-system, sans-serif" font-size="78" font-weight="900" text-anchor="middle">G</text>
+        <text x="104" y="108" fill="#111111" font-family="system-ui, -apple-system, sans-serif" font-size="78" font-weight="900" text-anchor="middle">B</text>
+      </svg>`)),
+      showAgentHeader: false,
+      showRbmChatNotice: false,
+      timestampLabel: '',
+      messageTime: '08:08',
+      showSpamBanner: true,
       showScrollDownBtn: false
     },
     payload: {
@@ -902,48 +906,47 @@ export const REAL_CAMPAIGN_PRESETS = {
       cards: [
         {
           id: 'gb-card-1',
-          mediaUrl: createSvgBannerDataUri({
-            bg1: '#B3261E',
-            bg2: '#7F1D1D',
-            accent: '#F59E0B',
-            title: 'EVAKUÁCIA!',
-            subtitle: 'OPUSTITE BUDOVU',
-            badge: 'POPLAŠNÁ SPRÁVA',
-            emoji: '⚠️'
-          }),
+          hideMedia: true,
+          mediaUrl: '',
           mediaType: 'image',
-          mediaSizeKb: 295,
-          mediaDimensions: { width: 1080, height: 1080 },
-          title: 'POZOR! EVAKUÁCIA!',
-          description: 'Prosím urýchlene opustite budovu v ktorej sa nachádzate. Použite únikové schodisko.',
+          mediaSizeKb: 0,
+          mediaDimensions: { width: 1440, height: 720 },
+          title: 'POZOR! POŽIAR.',
+          description: 'V škole je nahlásený požiar, prosím evakuujte sa podľa pokynov personálu. Rodičov prosíme aby neprichádzali do školy a počkali na ďalšie pokyny.',
           suggestions: [
-            { id: 'gb1', type: 'dial', text: 'Kontaktovať správcu budovy', value: '+421415001111' }
+            { id: 'gb1', type: 'dial', text: 'TIESŇOVÉ VOLANIE', value: '112' },
+            { id: 'gb2', type: 'url', text: 'PRVÁ POMOC', value: 'https://gbza.sk/prva-pomoc' }
           ]
         },
         {
           id: 'gb-card-2',
           unreadDividerBefore: true,
-          timestampBefore: 'Monday, Jun 9 • 11:36',
-          mediaUrl: createSvgBannerDataUri({
-            bg1: '#991B1B',
-            bg2: '#450A0A',
-            accent: '#EF4444',
-            title: 'POŽIAR!',
-            subtitle: 'HORÍ V BUDOVE',
-            badge: 'KRÍZOVÉ HLÁSENIE',
-            emoji: '🔥'
-          }),
+          timestampBefore: '08:08',
+          mediaUrl: (`data:image/svg+xml;utf8,` + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720">
+            <rect width="1440" height="720" fill="#F9E000"/>
+            <!-- Outer rounded black warning triangle border -->
+            <path d="M365 148 L560 492 Q572 514 547 514 L183 514 Q158 514 170 492 Z" fill="#F9E000" stroke="#000000" stroke-width="14" stroke-linejoin="round"/>
+            <!-- Inner solid black warning triangle -->
+            <path d="M365 186 L528 476 L202 476 Z" fill="#000000" stroke="#000000" stroke-width="10" stroke-linejoin="round"/>
+            <!-- Yellow exclamation mark inside triangle -->
+            <rect x="349" y="266" width="32" height="114" rx="15" fill="#F9E000"/>
+            <circle cx="365" cy="426" r="20" fill="#F9E000"/>
+            <!-- Bold stacked right-hand text: POZOR! VÝNIMOČNÁ SITUÁCIA! -->
+            <text x="645" y="284" fill="#000000" font-family="system-ui, -apple-system, 'Roboto', sans-serif" font-size="112" font-weight="900" letter-spacing="1">POZOR!</text>
+            <text x="648" y="388" fill="#000000" font-family="system-ui, -apple-system, 'Roboto', sans-serif" font-size="82" font-weight="900" letter-spacing="0.5">VÝNIMOČNÁ</text>
+            <text x="648" y="484" fill="#000000" font-family="system-ui, -apple-system, 'Roboto', sans-serif" font-size="82" font-weight="900" letter-spacing="0.5">SITUÁCIA!</text>
+          </svg>`)),
           mediaType: 'image',
-          mediaSizeKb: 310,
-          mediaDimensions: { width: 1080, height: 1080 },
-          title: 'POZOR! HORÍ V BUDOVE!',
-          description: 'Prosím urýchlene opustite budovu v ktorej sa nachádzate. Použite únikové schodisko.',
+          mediaSizeKb: 245,
+          mediaDimensions: { width: 1440, height: 720 },
+          title: 'POZOR! VAROVANIE PRED POČASÍM.',
+          description: 'Z dôvodu extrémneho počasia bude škola dnes ZATVORENÁ. Počkajte prosím na ďalšie informácie.',
           suggestions: [
-            { id: 'gb2', type: 'dial', text: 'Kontaktovať správcu budovy', value: '+421415001111' }
+            { id: 'gb3', type: 'dial', text: 'ZAVOLAJTE NÁM', value: '+421415001111' }
           ]
         }
       ],
-      smsFallbackText: 'GB Zilina: POZOR! EVAKUACIA! Prosim urychlene opustite budovu v ktorej sa nachadzate. Pouzite unikove schodisko.'
+      smsFallbackText: 'GB Zilina: POZOR! VAROVANIE PRED POCASIM. Z dovodu extremneho pocasia bude skola dnes ZATVORENA. Pockajte prosim na dalsie informacie.'
     }
   },
 

@@ -723,6 +723,8 @@ export class RcsPhonePreview {
                style="height: ${mediaHeightPx}px;"
                data-lightbox-url="${card.mediaUrl}"
                data-lightbox-title="${this.escapeHtml(card.title)}"
+               data-lightbox-time="${this.escapeHtml((card.timestampBefore || this.state.agent?.messageTime || '08:08').split('•').pop().trim())}"
+               data-lightbox-media-type="${this.escapeHtml(card.mediaType || 'image')}"
                title="Tap thumbnail to preview full-screen media">
             ${card.mediaType === 'video' ? `
               <video src="${card.mediaUrl}" class="rcs-card-media-el" autoplay muted loop playsinline></video>
@@ -785,7 +787,9 @@ export class RcsPhonePreview {
         <div class="rcs-horiz-top">
           <div class="rcs-horiz-thumb"
                data-lightbox-url="${card.mediaUrl}"
-               data-lightbox-title="${this.escapeHtml(card.title)}">
+               data-lightbox-title="${this.escapeHtml(card.title)}"
+               data-lightbox-time="${this.escapeHtml((card.timestampBefore || this.state.agent?.messageTime || '08:08').split('•').pop().trim())}"
+               data-lightbox-media-type="${this.escapeHtml(card.mediaType || 'image')}">
             <img src="${card.mediaUrl}" alt="${this.escapeHtml(card.title)}" class="rcs-card-media-el" draggable="false" />
             ${this.state.showCropGuides ? `
               <div class="rcs-preview-crop-overlay">
@@ -884,6 +888,71 @@ export class RcsPhonePreview {
     if (!modal) return '';
 
     if (modal.type === 'lightbox') {
+      const device = this.getCurrentDevice();
+      const isGoogleMessagesAndroid = device.os === 'android' && this.state.skinId === 'google_messages_m3';
+
+      if (isGoogleMessagesAndroid) {
+        const senderName = modal.senderName || this.state.agent?.name || 'GB Žilina';
+        const timestamp = modal.timestamp || this.state.agent?.messageTime || '08:08';
+        return `
+          <!-- Full-Screen Google Messages Image Viewer (Exact match to Screenshot_20261106-132447_Messages.png) -->
+          <div class="rcs-gmsg-fullscreen-viewer" id="rcs-close-phone-modal">
+            <!-- Top Bar: Close (✕), Sender Name + Timestamp on Left, Pencil + Edit on Right -->
+            <div class="rcs-gmsg-viewer-top" onclick="event.stopPropagation()">
+              <div class="rcs-gmsg-viewer-left">
+                <button type="button" class="rcs-gmsg-viewer-close" id="rcs-modal-close-btn" aria-label="Close full-screen image">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="rcs-gmsg-viewer-meta">
+                  <span class="rcs-gmsg-viewer-sender">${this.escapeHtml(senderName)}</span>
+                  <span class="rcs-gmsg-viewer-time">${this.escapeHtml(timestamp)}</span>
+                </div>
+              </div>
+              <button type="button" class="rcs-gmsg-viewer-edit" id="rcs-lightbox-edit-btn" title="Edit image">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Edit</span>
+              </button>
+            </div>
+
+            <!-- Center Stage: Displays the WHOLE uncropped original image centered on solid black -->
+            <div class="rcs-gmsg-viewer-stage">
+              ${modal.mediaType === 'video' ? `
+                <video src="${modal.url}" class="rcs-gmsg-viewer-img" autoplay muted loop playsinline onclick="event.stopPropagation()"></video>
+              ` : `
+                <img src="${modal.url}" alt="${this.escapeHtml(modal.title || senderName)}" class="rcs-gmsg-viewer-img" draggable="false" onclick="event.stopPropagation()" />
+              `}
+              <div class="rcs-gmsg-viewer-toast" id="rcs-lightbox-toast" hidden></div>
+            </div>
+
+            <!-- Bottom Action Bar: Two Circular White Buttons (Download & Share in #006a64) -->
+            <div class="rcs-gmsg-viewer-bottom" onclick="event.stopPropagation()">
+              <button type="button" class="rcs-gmsg-viewer-fab" id="rcs-lightbox-download-btn" title="Save image to device" aria-label="Download image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.1">
+                  <path d="M12 4v11m0 0-4-4m4 4 4-4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button type="button" class="rcs-gmsg-viewer-fab" id="rcs-lightbox-share-btn" title="Share image" aria-label="Share image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="18" cy="5" r="2.6"/>
+                  <circle cx="6" cy="12" r="2.6"/>
+                  <circle cx="18" cy="19" r="2.6"/>
+                  <path d="m8.3 10.7 7.4-4.4M8.3 13.3l7.4 4.4" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Bottom OS Home Gesture Indicator Pill on Black -->
+            <div class="rcs-gmsg-viewer-gesture">
+              <div class="rcs-gesture-pill is-light-on-dark"></div>
+            </div>
+          </div>
+        `;
+      }
+
       return `
         <div class="rcs-phone-modal-backdrop" id="rcs-close-phone-modal">
           <div class="rcs-lightbox-sheet" onclick="event.stopPropagation()">
@@ -1507,9 +1576,19 @@ export class RcsPhonePreview {
         if (this.touchState.wasDragged) return;
         const url = el.dataset.lightboxUrl;
         const title = el.dataset.lightboxTitle;
-        this.state.activeModal = { type: 'lightbox', url, title };
+        const timestamp = el.dataset.lightboxTime || this.state.agent?.messageTime || '08:08';
+        const mediaType = el.dataset.lightboxMediaType || 'image';
+        const senderName = this.state.agent?.name || 'GB Žilina';
+        this.state.activeModal = {
+          type: 'lightbox',
+          url,
+          title,
+          timestamp,
+          mediaType,
+          senderName
+        };
         this.renderViewportOnly();
-        this.logTelemetry('MEDIA_EXPAND', { title });
+        this.logTelemetry('MEDIA_EXPAND', { senderName, title, timestamp });
       });
     });
 
@@ -1583,7 +1662,7 @@ export class RcsPhonePreview {
       });
     }
 
-    // 8. Close Modal / Save Custom Preset
+    // 8. Close Modal / Google Messages Full-Screen Viewer Actions / Save Custom Preset
     const closeBackdrop = this.root.querySelector('#rcs-close-phone-modal');
     const closeBtn = this.root.querySelector('#rcs-modal-close-btn');
     if (closeBackdrop) {
@@ -1596,6 +1675,51 @@ export class RcsPhonePreview {
       closeBtn.addEventListener('click', () => {
         this.state.activeModal = null;
         this.renderViewportOnly();
+      });
+    }
+
+    const showViewerToast = (msg) => {
+      const toastEl = this.root.querySelector('#rcs-lightbox-toast');
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.hidden = false;
+      clearTimeout(this.viewerToastTimer);
+      this.viewerToastTimer = setTimeout(() => {
+        toastEl.hidden = true;
+      }, 1900);
+    };
+
+    const downloadMediaBtn = this.root.querySelector('#rcs-lightbox-download-btn');
+    if (downloadMediaBtn) {
+      downloadMediaBtn.addEventListener('click', () => {
+        const modal = this.state.activeModal;
+        if (modal && modal.url) {
+          const a = document.createElement('a');
+          a.href = modal.url;
+          const slug = (modal.title || modal.senderName || 'rcs-media').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          a.download = `${slug}.${modal.mediaType === 'video' ? 'mp4' : 'png'}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+        showViewerToast('Saved to device');
+        this.logTelemetry('MEDIA_DOWNLOAD', { title: modal?.title });
+      });
+    }
+
+    const shareMediaBtn = this.root.querySelector('#rcs-lightbox-share-btn');
+    if (shareMediaBtn) {
+      shareMediaBtn.addEventListener('click', () => {
+        showViewerToast('Sharing image…');
+        this.logTelemetry('MEDIA_SHARE', { title: this.state.activeModal?.title });
+      });
+    }
+
+    const editMediaBtn = this.root.querySelector('#rcs-lightbox-edit-btn');
+    if (editMediaBtn) {
+      editMediaBtn.addEventListener('click', () => {
+        showViewerToast('Opening Google Photos Editor…');
+        this.logTelemetry('MEDIA_EDIT', { title: this.state.activeModal?.title });
       });
     }
 
