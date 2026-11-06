@@ -1426,12 +1426,12 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   user-select: none;
-  cursor: none !important;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   font-family: 'Roboto', system-ui, -apple-system, sans-serif;
 }
 
 .rcs-phone-hardware * {
-  cursor: none !important;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 /* Theme Palettes (Google Messages Material 3 Light & Dark) */
@@ -1586,7 +1586,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-header-avatar {
@@ -1648,7 +1648,7 @@ html, body {
   border: none;
   color: #007aff;
   font-size: 24px;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-ios-center-brand {
@@ -1786,7 +1786,7 @@ html, body {
   width: 100%;
   overflow: hidden;
   background: #cbd5e1;
-  cursor: zoom-in;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-card-media-el {
@@ -1862,7 +1862,7 @@ html, body {
   color: var(--verified-color);
   font-weight: 600;
   font-size: 13px;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   padding: 0 4px;
 }
 
@@ -1889,7 +1889,7 @@ html, body {
   font-size: 13.8px;
   font-weight: 500;
   text-align: left;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   transition: transform 0.1s ease, filter 0.12s ease;
 }
 
@@ -1928,7 +1928,7 @@ html, body {
   margin: 0 -8px;
   padding: 2px 34px 4px;
   scroll-snap-type: x mandatory;
-  cursor: grab;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   scrollbar-width: none;
 }
 
@@ -1937,7 +1937,7 @@ html, body {
 }
 
 .rcs-carousel-track.is-dragging {
-  cursor: grabbing;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   scroll-snap-type: none;
 }
 
@@ -1977,7 +1977,7 @@ html, body {
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
-  cursor: zoom-in;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-horiz-copy {
@@ -2018,7 +2018,7 @@ html, body {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
@@ -2130,7 +2130,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   z-index: 15;
 }
 
@@ -2180,7 +2180,7 @@ html, body {
   border: none;
   color: var(--app-text-sub);
   font-size: 14px;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 /* 4. Bottom Compose Bar (Matches Google Messages screenshot) */
@@ -2210,7 +2210,7 @@ html, body {
   color: var(--app-text-sub);
   padding: 2px;
   display: inline-flex;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-compose-input {
@@ -2238,7 +2238,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   flex-shrink: 0;
 }
 
@@ -2255,7 +2255,7 @@ html, body {
   border: none;
   color: var(--app-text-sub);
   font-size: 20px;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-ios-input-pill {
@@ -2327,7 +2327,7 @@ html, body {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
 .rcs-lightbox-img {
@@ -2456,7 +2456,7 @@ html, body {
   font-size: 15px;
   font-weight: 700;
   line-height: 1;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2481,7 +2481,7 @@ html, body {
   color: var(--app-text-sub);
   font-size: 10px;
   font-weight: 700;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2508,7 +2508,7 @@ html, body {
   color: var(--app-text);
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   transition: all 0.12s ease;
 }
 
@@ -2622,3 +2622,17 @@ html, body {
 }
 
 
+
+
+.rcs-phone-scale-container,
+.rcs-phone-scale-container *,
+.rcs-phone-hardware,
+.rcs-phone-hardware *,
+.rcs-phone-hardware *:hover,
+.rcs-phone-hardware *:active,
+.rcs-phone-hardware *:focus,
+.rcs-phone-hardware button,
+.rcs-phone-hardware input,
+.rcs-phone-hardware a {
+  cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
+}
