@@ -125,6 +125,10 @@ function initWorkbench() {
         workbenchGrid.classList.add('is-mode-preview-only');
         chooserHost.style.display = 'none';
       }
+
+      if (previewModule.state.zoomMode === 'fit') {
+        requestAnimationFrame(() => previewModule.recalculateFitZoom());
+      }
     });
   });
 

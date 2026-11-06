@@ -60,7 +60,9 @@ export const ICONS = {
   'collapse-all': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6.5 4.5 3.5 3.5 3.5-3.5M6.5 15.5 10 12l3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'text': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M10 5v11M7 16h6" stroke-linecap="round"/></svg>`,
   'layers': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 2.5 7 10 11l7.5-4L10 3Z"/><path d="m2.5 10.5 7.5 4 7.5-4M2.5 14l7.5 4 7.5-4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  'copy': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="7" width="9" height="9" rx="1.8"/><path d="M4 13V5a1 1 0 0 1 1-1h8"/></svg>`
+  'copy': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="7" width="9" height="9" rx="1.8"/><path d="M4 13V5a1 1 0 0 1 1-1h8"/></svg>`,
+  'camera': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h2l1.2-1.8h4.6L13.5 5h2A1.5 1.5 0 0 1 17 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5v-8Z"/><circle cx="10" cy="10.5" r="2.8"/></svg>`,
+  'fit-screen': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7V4.5a1 1 0 0 1 1-1H7M13 3.5h2.5a1 1 0 0 1 1 1V7M16.5 13v2.5a1 1 0 0 1-1 1H13M7 16.5H4.5a1 1 0 0 1-1-1V13" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
 
 /**

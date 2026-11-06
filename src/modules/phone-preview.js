@@ -63,8 +63,8 @@ export class RcsPhonePreview {
       deviceId: options.deviceId || 'motorola_edge_50',
       skinId: options.skinId || 'google_messages_m3',
       theme: options.theme || 'light', // 'light' | 'dark'
-      zoom: options.zoom || 0.65, // Fits 720p viewport cleanly without vertical clipping
-      autoFit: options.autoFit !== false,
+      zoomMode: options.zoomMode || 'fit', // 'fit' (default) | 'manual'
+      zoom: options.zoom || 0.65, // Computed dynamically when zoomMode === 'fit'
       channelOverride: null, // null (live RCS) | 'sms_fallback'
       showCropGuides: options.showCropGuides ?? true,
       agent: structuredClone(options.agent || defaultPreset.agent),
@@ -73,7 +73,8 @@ export class RcsPhonePreview {
       isTyping: false,
       activeModal: null, // { type: 'lightbox' | 'action-sheet' | 'preset-builder', ... }
       expandedDescriptions: new Set(),
-      telemetryCount: 0
+      telemetryCount: 0,
+      isCapturingScreenshot: false
     };
 
     /**
@@ -93,10 +94,15 @@ export class RcsPhonePreview {
 
     this.render();
     this.attachEvents();
+    this.setupAutoFitObserver();
+    if (this.state.zoomMode === 'fit') {
+      requestAnimationFrame(() => this.recalculateFitZoom());
+    }
     this.logTelemetry('PREVIEW_INIT', {
       device: this.state.deviceId,
       skin: this.state.skinId,
-      template: this.state.payload.templateId
+      template: this.state.payload.templateId,
+      zoomMode: this.state.zoomMode
     });
   }
 
@@ -248,6 +254,9 @@ export class RcsPhonePreview {
     const skin = this.getCurrentSkin();
     const isSmsFallback = this.state.channelOverride === 'sms_fallback' || this.state.payload.templateId === 'sms_regular';
     const zoomPct = Math.round(this.state.zoom * 100);
+    const isFit = this.state.zoomMode === 'fit';
+    const nativeW = device.nativeWidth || device.width * 3;
+    const nativeH = device.nativeHeight || device.height * 3;
 
     this.root.innerHTML = `
       <div class="rcs-preview-shell">
@@ -280,7 +289,7 @@ export class RcsPhonePreview {
             </button>
           </div>
 
-          <!-- Theme, Channel Mode & Zoom Controls -->
+          <!-- Theme, Channel Mode, Zoom & Screenshot Controls -->
           <div class="rcs-toolbar-group">
             <button type="button" class="rcs-icon-btn ${isSmsFallback ? 'is-active-warn' : ''}" id="rcs-sms-mode-btn" title="Toggle between RCS Rich Message and SMS Fallback simulation">
               ${getIcon('sms')} <span>${isSmsFallback ? 'SMS Fallback ON' : 'RCS Live'}</span>
@@ -291,11 +300,23 @@ export class RcsPhonePreview {
               <span>${this.state.theme === 'dark' ? 'Dark' : 'Light'}</span>
             </button>
 
-            <div class="rcs-zoom-bar" title="Zoom Preview In / Out">
-              <button type="button" class="rcs-zoom-btn" id="rcs-zoom-out" aria-label="Zoom out">${getIcon('zoom-out')}</button>
-              <button type="button" class="rcs-zoom-readout" id="rcs-zoom-reset" title="Click to fit 720p screen">${zoomPct}%</button>
-              <button type="button" class="rcs-zoom-btn" id="rcs-zoom-in" aria-label="Zoom in">${getIcon('zoom-in')}</button>
+            <div class="rcs-zoom-bar" title="Zoom Preview In / Out or Fit Available Space">
+              <button type="button" class="rcs-zoom-btn" id="rcs-zoom-out" aria-label="Zoom out" title="Zoom Out">${getIcon('zoom-out')}</button>
+              <button type="button" class="rcs-zoom-fit-btn ${isFit ? 'is-active' : ''}" id="rcs-zoom-fit" title="Fit phone preview as large as possible inside available space (Default)">
+                ${getIcon('fit-screen')} <span>Fit</span>
+              </button>
+              <span class="rcs-zoom-readout" id="rcs-zoom-readout" title="Current scale factor">${zoomPct}%</span>
+              <button type="button" class="rcs-zoom-btn" id="rcs-zoom-in" aria-label="Zoom in" title="Zoom In">${getIcon('zoom-in')}</button>
             </div>
+
+            <!-- Save Native-Resolution Screenshot Button -->
+            <button type="button"
+                    class="rcs-icon-btn is-screenshot-btn"
+                    id="rcs-save-screenshot-btn"
+                    title="Save PNG screenshot at ${device.name} native resolution (${nativeW} × ${nativeH} px)">
+              ${getIcon('camera')}
+              <span>${this.state.isCapturingScreenshot ? 'Saving…' : `Screenshot (${nativeW}×${nativeH})`}</span>
+            </button>
           </div>
         </div>
 
@@ -307,8 +328,8 @@ export class RcsPhonePreview {
         </div>
 
         <!-- Main Stage (Phone Hardware Frame) -->
-        <div class="rcs-stage-wrap">
-          <div class="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(device.width * this.state.zoom)}px; height: ${Math.round(device.height * this.state.zoom)}px;">
+        <div class="rcs-stage-wrap" id="rcs-stage-wrap">
+          <div class="rcs-phone-scale-container" id="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(device.width * this.state.zoom)}px; height: ${Math.round(device.height * this.state.zoom)}px;">
             <div class="rcs-phone-hardware is-os-${device.os} is-skin-${skin.id} is-theme-${this.state.theme} is-cutout-${device.cutout}"
                  id="rcs-phone-viewport-host"
                  style="width: ${device.width}px; height: ${device.height}px; min-width: ${device.width}px; max-width: ${device.width}px; min-height: ${device.height}px; max-height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
@@ -935,6 +956,212 @@ export class RcsPhonePreview {
     return map[type] || 'globe';
   }
 
+  /**
+   * Observes the stage container (`#rcs-stage-wrap` / `this.root`) so that when `zoomMode === 'fit'`
+   * is active, the phone preview automatically scales as large as possible inside the available space.
+   */
+  setupAutoFitObserver() {
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        if (this.state.zoomMode === 'fit') {
+          this.recalculateFitZoom();
+        }
+      });
+      this.resizeObserver.observe(this.root);
+    }
+    window.addEventListener('resize', () => {
+      if (this.state.zoomMode === 'fit') {
+        this.recalculateFitZoom();
+      }
+    });
+  }
+
+  /**
+   * Computes the largest uniform scale factor (`zoom`) that fits the selected device's
+   * outer hardware frame (`device.width × device.height`) inside `#rcs-stage-wrap` with a small breathing margin.
+   */
+  recalculateFitZoom() {
+    const stage = this.root.querySelector('#rcs-stage-wrap');
+    if (!stage) return;
+    const device = this.getCurrentDevice();
+    const availW = Math.max(200, stage.clientWidth - 20);
+    const availH = Math.max(240, stage.clientHeight - 20);
+    const fitScale = Math.min(availW / device.width, availH / device.height);
+    const clampedZoom = Math.max(0.38, Math.min(1.8, Math.floor(fitScale * 1000) / 1000));
+    this.state.zoom = clampedZoom;
+    this.applyZoomDOM();
+  }
+
+  /**
+   * Updates the DOM scale variables and toolbar readout in-place without re-creating the phone DOM.
+   */
+  applyZoomDOM() {
+    const device = this.getCurrentDevice();
+    const scaleContainer = this.root.querySelector('#rcs-phone-scale-container');
+    const readout = this.root.querySelector('#rcs-zoom-readout');
+    const fitBtn = this.root.querySelector('#rcs-zoom-fit');
+    if (scaleContainer) {
+      scaleContainer.style.setProperty('--phone-scale', String(this.state.zoom));
+      scaleContainer.style.width = `${Math.round(device.width * this.state.zoom)}px`;
+      scaleContainer.style.height = `${Math.round(device.height * this.state.zoom)}px`;
+    }
+    if (readout) {
+      readout.textContent = `${Math.round(this.state.zoom * 100)}%`;
+    }
+    if (fitBtn) {
+      fitBtn.classList.toggle('is-active', this.state.zoomMode === 'fit');
+    }
+  }
+
+  /**
+   * Captures and downloads a PNG screenshot of the current phone screen at the exact native hardware
+   * resolution of the selected phone (e.g., `1220 × 2712 px` for Motorola Edge 50 Pro, `1344 × 2992 px`
+   * for Google Pixel 9 Pro, `1440 × 3120 px` for Samsung Galaxy S24 Ultra, `1206 × 2622 px` for iPhone 16 Pro).
+   */
+  async captureNativeScreenshot() {
+    if (this.state.isCapturingScreenshot) return;
+    const host = this.root.querySelector('#rcs-phone-viewport-host');
+    if (!host) return;
+
+    const device = this.getCurrentDevice();
+    const nativeW = device.nativeWidth || device.width * 3;
+    const nativeH = device.nativeHeight || device.height * 3;
+    const innerW = device.width - 20; // Inner screen logical width (excluding 10px physical bezel)
+    const innerH = device.height - 20; // Inner screen logical height (excluding 10px physical bezel)
+
+    const screenshotBtn = this.root.querySelector('#rcs-save-screenshot-btn');
+    this.state.isCapturingScreenshot = true;
+    if (screenshotBtn) {
+      screenshotBtn.innerHTML = `${getIcon('camera')} <span>Saving ${nativeW}×${nativeH}…</span>`;
+    }
+
+    try {
+      // 1. Clone the live phone screen DOM so we can strip interactive cursors, crop overlays, and bezels
+      const clone = host.cloneNode(true);
+      clone.querySelectorAll('#rcs-touch-overlay, .rcs-preview-crop-overlay, .rcs-hw-cutout').forEach((el) => el.remove());
+
+      // Preserve current scroll offsets (chat feed & carousel track) and live input values
+      const liveChatScroll = host.querySelector('#rcs-chat-scroll');
+      const cloneChatScroll = clone.querySelector('#rcs-chat-scroll');
+      if (liveChatScroll && cloneChatScroll) {
+        cloneChatScroll.style.overflow = 'hidden';
+        const scrollTop = liveChatScroll.scrollTop;
+        if (scrollTop > 0) {
+          Array.from(cloneChatScroll.children).forEach((child) => {
+            child.style.transform = `translateY(-${scrollTop}px)`;
+          });
+        }
+      }
+
+      const liveCarousel = host.querySelector('#rcs-carousel-track');
+      const cloneCarousel = clone.querySelector('#rcs-carousel-track');
+      if (liveCarousel && cloneCarousel) {
+        cloneCarousel.style.overflow = 'hidden';
+        const scrollLeft = liveCarousel.scrollLeft;
+        if (scrollLeft > 0) {
+          Array.from(cloneCarousel.children).forEach((child) => {
+            child.style.transform = `translateX(-${scrollLeft}px)`;
+          });
+        }
+      }
+
+      const liveInput = host.querySelector('#rcs-live-chat-input');
+      const cloneInput = clone.querySelector('#rcs-live-chat-input');
+      if (liveInput && cloneInput) {
+        cloneInput.setAttribute('value', liveInput.value);
+      }
+
+      // Configure the cloned root to render as a pure borderless native screen (innerW × innerH)
+      clone.style.position = 'relative';
+      clone.style.top = '0';
+      clone.style.left = '0';
+      clone.style.transform = 'none';
+      clone.style.width = `${innerW}px`;
+      clone.style.height = `${innerH}px`;
+      clone.style.minWidth = `${innerW}px`;
+      clone.style.maxWidth = `${innerW}px`;
+      clone.style.minHeight = `${innerH}px`;
+      clone.style.maxHeight = `${innerH}px`;
+      clone.style.border = 'none';
+      clone.style.borderRadius = '0';
+      clone.style.boxShadow = 'none';
+      clone.style.margin = '0';
+
+      // 2. Collect all active stylesheet rules so the SVG foreignObject is 100% self-contained
+      let cssText = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            cssText += `${rule.cssText}\n`;
+          }
+        } catch (_) {
+          // Ignore cross-origin stylesheet security restrictions if any
+        }
+      }
+      // Disable entry animations during static screenshot rasterization
+      cssText += `\n* { animation: none !important; transition: none !important; }\n`;
+
+      // 3. Serialize the cloned XHTML + CSS into an SVG <foreignObject> scaled to nativeW × nativeH
+      const serializer = new XMLSerializer();
+      const xhtml = serializer.serializeToString(clone);
+      const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${nativeW}" height="${nativeH}" viewBox="0 0 ${innerW} ${innerH}" preserveAspectRatio="none">
+        <defs>
+          <style type="text/css"><![CDATA[${cssText}]]></style>
+        </defs>
+        <foreignObject x="0" y="0" width="${innerW}" height="${innerH}">
+          ${xhtml}
+        </foreignObject>
+      </svg>`;
+
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`;
+
+      // 4. Rasterize onto an offscreen HTML5 Canvas at exact nativeWidth × nativeHeight
+      const canvas = document.createElement('canvas');
+      canvas.width = nativeW;
+      canvas.height = nativeH;
+      const ctx = canvas.getContext('2d');
+
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.decoding = 'sync';
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, nativeW, nativeH);
+          resolve();
+        };
+        img.onerror = (err) => reject(err);
+        img.src = svgDataUrl;
+      });
+
+      // 5. Trigger PNG file download with device name & native resolution in the filename
+      const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
+      const downloadUrl = URL.createObjectURL(pngBlob);
+      const safeDeviceSlug = device.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      const filename = `rcs-screenshot-${safeDeviceSlug}-${nativeW}x${nativeH}-${timestamp}.png`;
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
+
+      this.logTelemetry('SCREENSHOT_SAVED', {
+        device: device.id,
+        resolution: `${nativeW}x${nativeH}`,
+        filename
+      });
+    } catch (err) {
+      console.error('Failed to capture native screenshot:', err);
+    } finally {
+      this.state.isCapturingScreenshot = false;
+      if (screenshotBtn) {
+        screenshotBtn.innerHTML = `${getIcon('camera')} <span>Screenshot (${nativeW}×${nativeH})</span>`;
+      }
+    }
+  }
+
   attachEvents() {
     const deviceSelect = this.root.querySelector('#rcs-device-select');
     if (deviceSelect) {
@@ -945,6 +1172,9 @@ export class RcsPhonePreview {
           this.state.skinId = dev.defaultSkin;
           this.render();
           this.attachEvents();
+          if (this.state.zoomMode === 'fit') {
+            this.recalculateFitZoom();
+          }
           this.logTelemetry('DEVICE_CHANGE', { deviceId: dev.id, skinId: dev.defaultSkin });
         }
       });
@@ -956,6 +1186,9 @@ export class RcsPhonePreview {
         this.state.skinId = e.target.value;
         this.render();
         this.attachEvents();
+        if (this.state.zoomMode === 'fit') {
+          this.recalculateFitZoom();
+        }
         this.logTelemetry('OS_SKIN_CHANGE', { skinId: e.target.value });
       });
     }
@@ -981,33 +1214,44 @@ export class RcsPhonePreview {
         this.state.theme = this.state.theme === 'dark' ? 'light' : 'dark';
         this.render();
         this.attachEvents();
+        if (this.state.zoomMode === 'fit') {
+          this.recalculateFitZoom();
+        }
         this.logTelemetry('THEME_TOGGLE', { theme: this.state.theme });
       });
     }
 
     const zoomOut = this.root.querySelector('#rcs-zoom-out');
     const zoomIn = this.root.querySelector('#rcs-zoom-in');
-    const zoomReset = this.root.querySelector('#rcs-zoom-reset');
+    const zoomFit = this.root.querySelector('#rcs-zoom-fit');
+    const screenshotBtn = this.root.querySelector('#rcs-save-screenshot-btn');
 
     if (zoomOut) {
       zoomOut.addEventListener('click', () => {
-        this.state.zoom = Math.max(0.5, Math.round((this.state.zoom - 0.08) * 100) / 100);
-        this.render();
-        this.attachEvents();
+        this.state.zoomMode = 'manual';
+        this.state.zoom = Math.max(0.38, Math.round((this.state.zoom - 0.08) * 100) / 100);
+        this.applyZoomDOM();
+        this.logTelemetry('ZOOM_CHANGE', { zoomMode: 'manual', zoom: this.state.zoom });
       });
     }
     if (zoomIn) {
       zoomIn.addEventListener('click', () => {
-        this.state.zoom = Math.min(1.35, Math.round((this.state.zoom + 0.08) * 100) / 100);
-        this.render();
-        this.attachEvents();
+        this.state.zoomMode = 'manual';
+        this.state.zoom = Math.min(1.6, Math.round((this.state.zoom + 0.08) * 100) / 100);
+        this.applyZoomDOM();
+        this.logTelemetry('ZOOM_CHANGE', { zoomMode: 'manual', zoom: this.state.zoom });
       });
     }
-    if (zoomReset) {
-      zoomReset.addEventListener('click', () => {
-        this.state.zoom = 0.68;
-        this.render();
-        this.attachEvents();
+    if (zoomFit) {
+      zoomFit.addEventListener('click', () => {
+        this.state.zoomMode = 'fit';
+        this.recalculateFitZoom();
+        this.logTelemetry('ZOOM_CHANGE', { zoomMode: 'fit', zoom: this.state.zoom });
+      });
+    }
+    if (screenshotBtn) {
+      screenshotBtn.addEventListener('click', () => {
+        this.captureNativeScreenshot();
       });
     }
 
@@ -1285,6 +1529,8 @@ export class RcsPhonePreview {
         const height = Math.min(980, Math.max(580, Number(this.root.querySelector('#rcs-custom-preset-h')?.value) || 880));
         const skinId = this.root.querySelector('#rcs-custom-preset-skin')?.value || 'google_messages_m3';
         const newId = `custom_${Date.now()}`;
+        const nativeWidth = (width - 20) * 3;
+        const nativeHeight = (height - 20) * 3;
         this.devices.push({
           id: newId,
           name,
@@ -1293,7 +1539,9 @@ export class RcsPhonePreview {
           defaultSkin: skinId,
           width,
           height,
-          logicalRes: `${width} × ${height} dp (Custom Preset)`,
+          nativeWidth,
+          nativeHeight,
+          logicalRes: `${width - 20} × ${height - 20} dp (${nativeWidth} × ${nativeHeight} px)`,
           dpi: '440 ppi',
           bezelRadius: 32,
           screenRadius: 26,
@@ -1307,7 +1555,10 @@ export class RcsPhonePreview {
         this.state.activeModal = null;
         this.render();
         this.attachEvents();
-        this.logTelemetry('CUSTOM_PRESET_CREATED', { name, width, height, skinId });
+        if (this.state.zoomMode === 'fit') {
+          this.recalculateFitZoom();
+        }
+        this.logTelemetry('CUSTOM_PRESET_CREATED', { name, width, height, nativeWidth, nativeHeight, skinId });
       });
     }
   }
