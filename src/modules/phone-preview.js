@@ -66,7 +66,7 @@ export class RcsPhonePreview {
       zoomMode: options.zoomMode || 'fit', // 'fit' (default) | 'manual'
       zoom: options.zoom || 0.65, // Computed dynamically when zoomMode === 'fit'
       channelOverride: null, // null (live RCS) | 'sms_fallback'
-      showCropGuides: options.showCropGuides ?? true,
+      showCropGuides: options.showCropGuides ?? false,
       agent: structuredClone(options.agent || defaultPreset.agent),
       payload: structuredClone(options.payload || defaultPreset.payload),
       conversationHistory: [], // Additional interactive messages appended during simulation
@@ -118,7 +118,14 @@ export class RcsPhonePreview {
   update({ payload, agent, showCropGuides } = {}) {
     if (payload) this.state.payload = structuredClone(payload);
     if (agent) this.state.agent = structuredClone(agent);
-    if (typeof showCropGuides === 'boolean') this.state.showCropGuides = showCropGuides;
+    if (typeof showCropGuides === 'boolean') {
+      this.state.showCropGuides = showCropGuides;
+      const guidesBtn = this.root.querySelector('#rcs-toggle-guides-btn');
+      if (guidesBtn) {
+        guidesBtn.classList.toggle('is-active-warn', this.state.showCropGuides);
+        guidesBtn.innerHTML = `${getIcon('crop')} <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>`;
+      }
+    }
 
     this.renderViewportOnly();
     this.logTelemetry('CARD_IMPRESSION', {
@@ -322,8 +329,16 @@ export class RcsPhonePreview {
             </button>
           </div>
 
-          <!-- Theme, Channel Mode, Zoom & Screenshot Controls -->
+          <!-- Theme, Channel Mode, Visual Guides, Zoom & Screenshot Controls -->
           <div class="rcs-toolbar-group">
+            <button type="button"
+                    class="rcs-icon-btn ${this.state.showCropGuides ? 'is-active-warn' : ''}"
+                    id="rcs-toggle-guides-btn"
+                    title="Show or hide visual crop guides, dashed yellow lines, and dp size labels on the preview (Hidden by default)">
+              ${getIcon('crop')}
+              <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>
+            </button>
+
             <button type="button" class="rcs-icon-btn ${isSmsFallback ? 'is-active-warn' : ''}" id="rcs-sms-mode-btn" title="Toggle between RCS Rich Message and SMS Fallback simulation">
               ${getIcon('sms')} <span>${isSmsFallback ? 'SMS Fallback ON' : 'RCS Live'}</span>
             </button>
@@ -1231,6 +1246,22 @@ export class RcsPhonePreview {
       openPresetModalBtn.addEventListener('click', () => {
         this.state.activeModal = { type: 'preset-builder' };
         this.renderViewportOnly();
+      });
+    }
+
+    const toggleGuidesBtn = this.root.querySelector('#rcs-toggle-guides-btn');
+    if (toggleGuidesBtn) {
+      toggleGuidesBtn.addEventListener('click', () => {
+        this.state.showCropGuides = !this.state.showCropGuides;
+        toggleGuidesBtn.classList.toggle('is-active-warn', this.state.showCropGuides);
+        toggleGuidesBtn.innerHTML = `${getIcon('crop')} <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>`;
+        this.renderViewportOnly();
+        this.root.dispatchEvent(new CustomEvent('rcs:guides-toggle', {
+          detail: { showCropGuides: this.state.showCropGuides },
+          bubbles: true,
+          composed: true
+        }));
+        this.logTelemetry('GUIDES_TOGGLE', { showCropGuides: this.state.showCropGuides });
       });
     }
 

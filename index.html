@@ -4088,7 +4088,7 @@ class RcsTemplateChooser {
     this.state = {
       activePresetId: defaultPreset.id,
       activeCardIndex: 0,
-      showCropGuides: true,
+      showCropGuides: options.showCropGuides ?? false,
       agentDetected: true,
       /**
        * Tracks which accordion modules in the vertical stack are currently collapsed.
@@ -4619,15 +4619,17 @@ class RcsTemplateChooser {
       <div class="rcs-crop-diagnostic">
         <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
           <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
-            <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
-              ${cropInfo.cropAxis === 'horizontal'
-                ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
-                : cropInfo.cropAxis === 'vertical'
-                  ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
-                  : 'width: 100%; height: 100%;'}
-            ">
-              <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
-            </div>
+            ${showCropGuides ? `
+              <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
+                ${cropInfo.cropAxis === 'horizontal'
+                  ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                  : cropInfo.cropAxis === 'vertical'
+                    ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                    : 'width: 100%; height: 100%;'}
+              ">
+                <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
+              </div>
+            ` : ''}
           </div>
         </div>
 
@@ -5569,7 +5571,7 @@ class RcsPhonePreview {
       zoomMode: options.zoomMode || 'fit', // 'fit' (default) | 'manual'
       zoom: options.zoom || 0.65, // Computed dynamically when zoomMode === 'fit'
       channelOverride: null, // null (live RCS) | 'sms_fallback'
-      showCropGuides: options.showCropGuides ?? true,
+      showCropGuides: options.showCropGuides ?? false,
       agent: structuredClone(options.agent || defaultPreset.agent),
       payload: structuredClone(options.payload || defaultPreset.payload),
       conversationHistory: [], // Additional interactive messages appended during simulation
@@ -5621,7 +5623,14 @@ class RcsPhonePreview {
   update({ payload, agent, showCropGuides } = {}) {
     if (payload) this.state.payload = structuredClone(payload);
     if (agent) this.state.agent = structuredClone(agent);
-    if (typeof showCropGuides === 'boolean') this.state.showCropGuides = showCropGuides;
+    if (typeof showCropGuides === 'boolean') {
+      this.state.showCropGuides = showCropGuides;
+      const guidesBtn = this.root.querySelector('#rcs-toggle-guides-btn');
+      if (guidesBtn) {
+        guidesBtn.classList.toggle('is-active-warn', this.state.showCropGuides);
+        guidesBtn.innerHTML = `${getIcon('crop')} <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>`;
+      }
+    }
 
     this.renderViewportOnly();
     this.logTelemetry('CARD_IMPRESSION', {
@@ -5825,8 +5834,16 @@ class RcsPhonePreview {
             </button>
           </div>
 
-          <!-- Theme, Channel Mode, Zoom & Screenshot Controls -->
+          <!-- Theme, Channel Mode, Visual Guides, Zoom & Screenshot Controls -->
           <div class="rcs-toolbar-group">
+            <button type="button"
+                    class="rcs-icon-btn ${this.state.showCropGuides ? 'is-active-warn' : ''}"
+                    id="rcs-toggle-guides-btn"
+                    title="Show or hide visual crop guides, dashed yellow lines, and dp size labels on the preview (Hidden by default)">
+              ${getIcon('crop')}
+              <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>
+            </button>
+
             <button type="button" class="rcs-icon-btn ${isSmsFallback ? 'is-active-warn' : ''}" id="rcs-sms-mode-btn" title="Toggle between RCS Rich Message and SMS Fallback simulation">
               ${getIcon('sms')} <span>${isSmsFallback ? 'SMS Fallback ON' : 'RCS Live'}</span>
             </button>
@@ -6737,6 +6754,22 @@ class RcsPhonePreview {
       });
     }
 
+    const toggleGuidesBtn = this.root.querySelector('#rcs-toggle-guides-btn');
+    if (toggleGuidesBtn) {
+      toggleGuidesBtn.addEventListener('click', () => {
+        this.state.showCropGuides = !this.state.showCropGuides;
+        toggleGuidesBtn.classList.toggle('is-active-warn', this.state.showCropGuides);
+        toggleGuidesBtn.innerHTML = `${getIcon('crop')} <span>${this.state.showCropGuides ? 'Guides ON' : 'Guides OFF'}</span>`;
+        this.renderViewportOnly();
+        this.root.dispatchEvent(new CustomEvent('rcs:guides-toggle', {
+          detail: { showCropGuides: this.state.showCropGuides },
+          bubbles: true,
+          composed: true
+        }));
+        this.logTelemetry('GUIDES_TOGGLE', { showCropGuides: this.state.showCropGuides });
+      });
+    }
+
     const smsModeBtn = this.root.querySelector('#rcs-sms-mode-btn');
     if (smsModeBtn) {
       smsModeBtn.addEventListener('click', () => {
@@ -7254,6 +7287,16 @@ function initWorkbench() {
      */
     onTriggerFlow: (action) => {
       previewModule.triggerFlowAction(action);
+    }
+  });
+
+  // Sync visual crop guides toggle from Preview toolbar back to Chooser module
+  previewHost.addEventListener('rcs:guides-toggle', (e) => {
+    const show = Boolean(e.detail?.showCropGuides);
+    if (chooserModule && chooserModule.state.showCropGuides !== show) {
+      chooserModule.state.showCropGuides = show;
+      chooserModule.render();
+      chooserModule.attachEvents();
     }
   });
 

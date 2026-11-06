@@ -102,6 +102,16 @@ function initWorkbench() {
     }
   });
 
+  // Sync visual crop guides toggle from Preview toolbar back to Chooser module
+  previewHost.addEventListener('rcs:guides-toggle', (e) => {
+    const show = Boolean(e.detail?.showCropGuides);
+    if (chooserModule && chooserModule.state.showCropGuides !== show) {
+      chooserModule.state.showCropGuides = show;
+      chooserModule.render();
+      chooserModule.attachEvents();
+    }
+  });
+
   // ---------------------------------------------------------------------------
   // 3. Layout Mode Switcher (Split Workbench | Module 1 Only | Module 2 Only)
   //    Demonstrates that either module can operate independently on its own page.

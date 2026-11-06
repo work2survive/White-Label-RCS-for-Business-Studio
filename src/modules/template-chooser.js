@@ -62,7 +62,7 @@ export class RcsTemplateChooser {
     this.state = {
       activePresetId: defaultPreset.id,
       activeCardIndex: 0,
-      showCropGuides: true,
+      showCropGuides: options.showCropGuides ?? false,
       agentDetected: true,
       /**
        * Tracks which accordion modules in the vertical stack are currently collapsed.
@@ -593,15 +593,17 @@ export class RcsTemplateChooser {
       <div class="rcs-crop-diagnostic">
         <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
           <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
-            <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
-              ${cropInfo.cropAxis === 'horizontal'
-                ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
-                : cropInfo.cropAxis === 'vertical'
-                  ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
-                  : 'width: 100%; height: 100%;'}
-            ">
-              <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
-            </div>
+            ${showCropGuides ? `
+              <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
+                ${cropInfo.cropAxis === 'horizontal'
+                  ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                  : cropInfo.cropAxis === 'vertical'
+                    ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                    : 'width: 100%; height: 100%;'}
+              ">
+                <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
+              </div>
+            ` : ''}
           </div>
         </div>
 
