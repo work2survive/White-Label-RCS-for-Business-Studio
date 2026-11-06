@@ -11,9 +11,12 @@ import { RcsTemplateChooser } from './modules/template-chooser.js';
 import { RcsPhonePreview } from './modules/phone-preview.js';
 import { REAL_CAMPAIGN_PRESETS } from './modules/rcs-specs.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+function initWorkbench() {
   const chooserHost = document.getElementById('chooser-module-root');
   const previewHost = document.getElementById('preview-module-root');
+  if (!chooserHost || !previewHost || chooserHost.dataset.initialized === 'true') return;
+  chooserHost.dataset.initialized = 'true';
+
   const telemetryLogEl = document.getElementById('rcs-telemetry-last-event');
   const telemetryCountEl = document.getElementById('rcs-telemetry-counter');
   const workbenchGrid = document.getElementById('rcs-workbench-grid');
@@ -80,4 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
     chooserModule,
     previewModule
   };
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initWorkbench);
+} else {
+  initWorkbench();
+}
+
