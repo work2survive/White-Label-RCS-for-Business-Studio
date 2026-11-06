@@ -284,6 +284,23 @@ export const ACTION_TYPES = {
 
 export const DEVICE_PRESETS = [
   {
+    id: 'motorola_edge_50',
+    name: 'Motorola Edge 50 Pro',
+    brand: 'Motorola',
+    os: 'android',
+    defaultSkin: 'google_messages_m3',
+    width: 432,
+    height: 916,
+    logicalRes: '412 × 896 dp (1220 × 2712 px)',
+    dpi: '446 ppi',
+    bezelRadius: 42,
+    screenRadius: 34,
+    cutout: 'punch-center',
+    aspect: '20:9',
+    networkLabel: '5G',
+    battery: 79
+  },
+  {
     id: 'pixel_9_pro',
     name: 'Google Pixel 9 Pro',
     brand: 'Google',
@@ -316,23 +333,6 @@ export const DEVICE_PRESETS = [
     aspect: '19.5:9',
     networkLabel: '5G',
     battery: 94
-  },
-  {
-    id: 'motorola_edge_50',
-    name: 'Motorola Edge 50 Pro',
-    brand: 'Motorola',
-    os: 'android',
-    defaultSkin: 'google_messages_m3',
-    width: 432,
-    height: 868,
-    logicalRes: '412 × 848 dp (1220 × 2712 px)',
-    dpi: '446 ppi',
-    bezelRadius: 40,
-    screenRadius: 32,
-    cutout: 'punch-center',
-    aspect: '19.5:9',
-    networkLabel: '5G',
-    battery: 79
   },
   {
     id: 'iphone_16_pro',
@@ -804,6 +804,191 @@ export const REAL_CAMPAIGN_PRESETS = {
         }
       ],
       smsFallbackText: 'Bistro Urban: Confirm your dinner table for 2 today at 19:00. Reply YES to confirm or manage booking at https://bistro.urban/r/842'
+    }
+  },
+
+  telekom_faktura_edge50: {
+    id: 'telekom_faktura_edge50',
+    label: '📱 Telekom Faktúra — Motorola Edge 50 Pro (Tall Card)',
+    templateId: 'standalone_vertical',
+    agent: {
+      name: 'Telekom',
+      verified: true,
+      tagline: 'Zažite viac s Telekomom.',
+      color: '#E20074',
+      avatarShape: 'circle',
+      logoUrl: createLogoSvgDataUri({ bg: '#E20074', text: 'T', fg: '#ffffff' }),
+      showAgentHeader: false,
+      showRbmChatNotice: false,
+      timestampLabel: 'Thursday, Oct 3 • 08:08',
+      messageTime: '08:08',
+      showSpamBanner: true,
+      showScrollDownBtn: false
+    },
+    payload: {
+      templateId: 'standalone_vertical',
+      channel: 'rcs',
+      mediaHeight: 'TALL',
+      cardWidth: 'MEDIUM',
+      cards: [
+        {
+          id: 'card-telekom-faktura',
+          mediaUrl: createSvgBannerDataUri({
+            bg1: '#E20074',
+            bg2: '#8B0047',
+            accent: '#FF4DA6',
+            title: 'NOVÁ FAKTÚRA',
+            subtitle: 'TELEKOM APLIKÁCIA',
+            badge: 'TELEKOM SK',
+            emoji: '🧾'
+          }),
+          mediaType: 'image',
+          mediaSizeKb: 380,
+          mediaDimensions: { width: 1080, height: 1080 },
+          title: 'Vaša nová Telekom faktúra',
+          description: 'Dobrý deň, vystavili sme pre Vás faktúru za služby v Telekome v sume 13,33 EUR so splatnosťou 18.10.2024 pod variabilným symbolom 9803799585. Elektronickú faktúru si môžete zobraziť a uhradiť na webe alebo v Telekom aplikácii.',
+          suggestions: [
+            { id: 'tf1', type: 'url', text: 'Zaplatiť cez aplikáciu', value: 'https://telekom.sk/faktura' },
+            { id: 'tf2', type: 'reply', text: 'Bližšie informácie', value: 'INFO_FAKTURA' },
+            { id: 'tf3', type: 'reply', text: 'Faktúra za predch. obdobie', value: 'PREV_FAKTURA' }
+          ]
+        }
+      ],
+      smsFallbackText: 'Telekom: Vystavili sme pre Vas fakturu v sume 13,33 EUR so splatnostou 18.10.2024 pod VS 9803799585. Zaplatit: https://telekom.sk/faktura'
+    }
+  },
+
+  gb_zilina_alert_edge50: {
+    id: 'gb_zilina_alert_edge50',
+    label: '🚨 GB Žilina — Motorola Edge 50 Pro (Emergency Feed)',
+    templateId: 'multi_card_feed',
+    agent: {
+      name: 'GB Žilina',
+      verified: true,
+      tagline: 'Správa budov v meste Žilina',
+      color: '#006a64',
+      avatarShape: 'circle',
+      logoUrl: createLogoSvgDataUri({ bg: '#0b4f8a', text: 'GB', sub: 'ŽILINA' }),
+      showAgentHeader: true,
+      showRbmChatNotice: true,
+      timestampLabel: 'Oct 15, 2024, 15:28',
+      messageTime: '11:36',
+      showSpamBanner: false,
+      showScrollDownBtn: false
+    },
+    payload: {
+      templateId: 'multi_card_feed',
+      channel: 'rcs',
+      mediaHeight: 'TALL',
+      cardWidth: 'MEDIUM',
+      cards: [
+        {
+          id: 'gb-card-1',
+          mediaUrl: createSvgBannerDataUri({
+            bg1: '#B3261E',
+            bg2: '#7F1D1D',
+            accent: '#F59E0B',
+            title: 'EVAKUÁCIA!',
+            subtitle: 'OPUSTITE BUDOVU',
+            badge: 'POPLAŠNÁ SPRÁVA',
+            emoji: '⚠️'
+          }),
+          mediaType: 'image',
+          mediaSizeKb: 295,
+          mediaDimensions: { width: 1080, height: 1080 },
+          title: 'POZOR! EVAKUÁCIA!',
+          description: 'Prosím urýchlene opustite budovu v ktorej sa nachádzate. Použite únikové schodisko.',
+          suggestions: [
+            { id: 'gb1', type: 'dial', text: 'Kontaktovať správcu budovy', value: '+421415001111' }
+          ]
+        },
+        {
+          id: 'gb-card-2',
+          unreadDividerBefore: true,
+          timestampBefore: 'Monday, Jun 9 • 11:36',
+          mediaUrl: createSvgBannerDataUri({
+            bg1: '#991B1B',
+            bg2: '#450A0A',
+            accent: '#EF4444',
+            title: 'POŽIAR!',
+            subtitle: 'HORÍ V BUDOVE',
+            badge: 'KRÍZOVÉ HLÁSENIE',
+            emoji: '🔥'
+          }),
+          mediaType: 'image',
+          mediaSizeKb: 310,
+          mediaDimensions: { width: 1080, height: 1080 },
+          title: 'POZOR! HORÍ V BUDOVE!',
+          description: 'Prosím urýchlene opustite budovu v ktorej sa nachádzate. Použite únikové schodisko.',
+          suggestions: [
+            { id: 'gb2', type: 'dial', text: 'Kontaktovať správcu budovy', value: '+421415001111' }
+          ]
+        }
+      ],
+      smsFallbackText: 'GB Zilina: POZOR! EVAKUACIA! Prosim urychlene opustite budovu v ktorej sa nachadzate. Pouzite unikove schodisko.'
+    }
+  },
+
+  slsp_multi_edge50: {
+    id: 'slsp_multi_edge50',
+    label: '🏦 Slovenská sporiteľňa — Motorola Edge 50 Pro (Banking)',
+    templateId: 'multi_card_feed',
+    agent: {
+      name: 'Slovenská sporiteľňa, a.s.',
+      verified: true,
+      tagline: 'Sme najväčšia komerčná banka na Slovensku.',
+      color: '#2563EB',
+      avatarShape: 'circle',
+      logoUrl: createLogoSvgDataUri({ bg: '#1D4ED8', text: 'S', sub: 'SLSP' }),
+      showAgentHeader: false,
+      showRbmChatNotice: false,
+      timestampLabel: 'Tuesday, Oct 28 • 16:40',
+      messageTime: '14:21',
+      showSpamBanner: true,
+      showScrollDownBtn: false
+    },
+    payload: {
+      templateId: 'multi_card_feed',
+      channel: 'rcs',
+      mediaHeight: 'TALL',
+      cardWidth: 'MEDIUM',
+      cards: [
+        {
+          id: 'slsp-card-1',
+          hideMedia: true,
+          mediaUrl: '',
+          mediaType: 'image',
+          mediaSizeKb: 0,
+          mediaDimensions: { width: 1080, height: 1080 },
+          title: '',
+          description: 'Či už nás oslovíte v pobočke, cez Georgea alebo telefonicky, vždy sa môžete spoľahnúť, že sa vám budeme naplno venovať. Za vašu priazeň vám úprimne ďakujeme.',
+          suggestions: [
+            { id: 'sl1', type: 'url', text: 'Viac informácií', value: 'https://slsp.sk/ocenenie' }
+          ]
+        },
+        {
+          id: 'slsp-card-2',
+          timestampBefore: 'Monday, Nov 3 • 14:21',
+          mediaUrl: createSvgBannerDataUri({
+            bg1: '#0284C7',
+            bg2: '#0369A1',
+            accent: '#38BDF8',
+            title: 'BUDÚCNOSŤ JE VAŠA',
+            subtitle: 'GEORGE BANKING',
+            badge: 'SLOVENSKÁ SPORITEĽŇA',
+            emoji: '💙'
+          }),
+          mediaType: 'image',
+          mediaSizeKb: 360,
+          mediaDimensions: { width: 1080, height: 1080 },
+          title: 'Zistite, aké novinky sme pre vás vytvorili',
+          description: 'Prinášame vám nové funkcie v aplikácii George pre ešte jednoduchšiu správu vašich financií.',
+          suggestions: [
+            { id: 'sl2', type: 'url', text: 'Otvoriť Georgea', value: 'https://george.slsp.sk' }
+          ]
+        }
+      ],
+      smsFallbackText: 'Slovenska sporitelna: Zistite, ake novinky sme pre vas vytvorili v aplikacii George: https://slsp.sk'
     }
   }
 };

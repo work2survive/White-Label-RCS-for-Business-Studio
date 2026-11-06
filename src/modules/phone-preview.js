@@ -60,10 +60,10 @@ export class RcsPhonePreview {
     this.skins = structuredClone(OS_APP_SKINS);
 
     this.state = {
-      deviceId: options.deviceId || 'pixel_9_pro',
+      deviceId: options.deviceId || 'motorola_edge_50',
       skinId: options.skinId || 'google_messages_m3',
       theme: options.theme || 'light', // 'light' | 'dark'
-      zoom: options.zoom || 0.68, // Fits 720p viewport cleanly without vertical clipping
+      zoom: options.zoom || 0.65, // Fits 720p viewport cleanly without vertical clipping
       autoFit: options.autoFit !== false,
       channelOverride: null, // null (live RCS) | 'sms_fallback'
       showCropGuides: options.showCropGuides ?? true,
@@ -343,21 +343,34 @@ export class RcsPhonePreview {
       <!-- Hardware Cutout (Punch-hole / Dynamic Island / Fold Crease) -->
       <div class="rcs-hw-cutout"></div>
 
-      <!-- 1. Authentic Mobile OS Status Bar (Time, Wi-Fi, 4G/5G, Signal, Battery) -->
+      <!-- 1. Authentic Mobile OS Status Bar (Matched to Motorola Edge 50 Pro 10:46 Status Bar) -->
       <div class="rcs-os-statusbar">
         <div class="rcs-status-left">
-          <span class="rcs-status-time">12:04</span>
+          <span class="rcs-status-time">10:46</span>
+          ${!isIos ? `
+            <span class="rcs-status-notif-row" aria-hidden="true">
+              <span class="rcs-status-mini-txt">E</span>
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2.5" y="2.5" width="11" height="11" rx="3"/><circle cx="8" cy="8" r="2.3"/>
+              </svg>
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" opacity="0.85">
+                <path d="M8 1.8 3 4v4.2c0 3.3 2.1 6.2 5 7 2.9-.8 5-3.7 5-7V4L8 1.8zm0 9.2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+              </svg>
+              <span class="rcs-status-dot">•</span>
+            </span>
+          ` : ''}
         </div>
         <div class="rcs-status-right">
-          <!-- Vibrate/Alarm icon matching real screenshot -->
-          <svg class="rcs-status-ico" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
-            <path d="M2 5h1.5v6H2V5zm10.5 0H14v6h-1.5V5zM5 3h6a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+          <!-- NFC badge icon matching Motorola Edge 50 Pro status bar -->
+          <svg class="rcs-status-ico" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="2" width="12" height="12" rx="2"/>
+            <path d="M5.2 11V5l5.6 6V5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <!-- Wi-Fi icon -->
           <svg class="rcs-status-ico" viewBox="0 0 16 16" width="13" height="13" fill="currentColor">
             <path d="M8 13.2 1.2 5.4C3.1 3.8 5.4 3 8 3s4.9.8 6.8 2.4L8 13.2z"/>
           </svg>
-          <span class="rcs-status-net">${device.networkLabel || '4G'}</span>
+          <span class="rcs-status-net">${device.networkLabel || '5G'}</span>
           <!-- Signal triangle matching Android status bar -->
           <svg class="rcs-status-ico" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
             <path d="M1 14h13V1L1 14zm11-2H8V6.5L12 2.5V12z"/>
@@ -372,9 +385,9 @@ export class RcsPhonePreview {
       <!-- 2. Messaging App Top Navigation Bar -->
       ${this.renderAppHeader(agent, isIos, isSamsung)}
 
-      <!-- 3. Scrollable Conversation Feed -->
+      <!-- 3. Top-Rounded Conversation Sheet (Matches Motorola Edge 50 Pro #f3fbf9 sheet below #e7f0ed header) -->
       <div class="rcs-chat-scroll" id="rcs-chat-scroll">
-        <!-- Optional Large Centered Agent Info Header (Matches TIPOS Screenshot_20260617-120218.png) -->
+        <!-- Optional Large Centered Agent Info Header (Matches GB Žilina Screenshot_20261106-104424_Messages.png) -->
         ${agent.showAgentHeader && !isSmsFallback ? `
           <div class="rcs-agent-hero-card">
             <img src="${agent.logoUrl}" alt="${this.escapeHtml(agent.name)}" class="rcs-agent-hero-logo is-${agent.avatarShape || 'rounded'}" />
@@ -387,9 +400,11 @@ export class RcsPhonePreview {
         ` : ''}
 
         <!-- Conversation Timestamp Pill -->
-        <div class="rcs-chat-timestamp">${this.escapeHtml(agent.timestampLabel || 'Thursday, Feb 12 • 22:46')}</div>
+        ${agent.timestampLabel ? `
+          <div class="rcs-chat-timestamp">${this.escapeHtml(agent.timestampLabel)}</div>
+        ` : ''}
 
-        <!-- Optional "This is an RCS for Business chat." notice (Matches Telekom Screenshot_20260617-120327.png) -->
+        <!-- Optional "This is an RCS for Business chat." notice -->
         ${agent.showRbmChatNotice !== false && !isSmsFallback ? `
           <div class="rcs-chat-system-notice">This is an RCS for Business chat.</div>
         ` : ''}
@@ -400,16 +415,16 @@ export class RcsPhonePreview {
         <!-- Main Message Content (Rich Card, Horizontal Card, Carousel, Multi-Card, Text+Chips, or SMS) -->
         <div class="rcs-message-group">
           ${this.renderPrimaryMessagePayload(payload, agent, isSmsFallback)}
-          <div class="rcs-msg-delivery-time">${this.escapeHtml(agent.messageTime || '19:34')}</div>
+          <div class="rcs-msg-delivery-time">${this.escapeHtml(agent.messageTime || '08:08')}</div>
         </div>
 
         <!-- Interactive Conversation History (User Taps / Replies / Animated Bubbles) -->
         ${this.state.conversationHistory.map((item) => `
           <div class="rcs-chat-bubble-row is-${item.sender}">
-            <div class="rcs-chat-bubble is-${item.sender}" style="${item.sender === 'user' ? `--user-bubble-bg: ${agent.color || '#0B57D0'}` : ''}">
-              <span>${this.escapeHtml(item.text)}</span>
+            <div class="rcs-chat-bubble is-${item.sender}" style="${item.sender === 'user' ? `--user-bubble-bg: ${agent.color || '#006a64'}` : ''}">
+              <span>${this.formatRichText(item.text)}</span>
             </div>
-            <div class="rcs-bubble-time">${item.time}</div>
+            ${item.time ? `<div class="rcs-bubble-time">${item.time}</div>` : ''}
           </div>
         `).join('')}
 
@@ -421,7 +436,7 @@ export class RcsPhonePreview {
         ` : ''}
       </div>
 
-      <!-- Optional Floating Scroll-to-Bottom Arrow Button (Matches TIPOS Screenshot_20260617-120218.png) -->
+      <!-- Optional Floating Scroll-to-Bottom Arrow Button -->
       ${agent.showScrollDownBtn ? `
         <button type="button" class="rcs-floating-scroll-btn" id="rcs-scroll-bottom-btn" title="Scroll to bottom">
           <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -430,21 +445,24 @@ export class RcsPhonePreview {
         </button>
       ` : ''}
 
-      <!-- Optional Spam & Safety Shield Banner (Matches Telekom Screenshot_20260617-120327.png) -->
-      ${agent.showSpamBanner ? `
-        <div class="rcs-spam-shield-banner">
-          <span class="rcs-shield-ico">${getIcon('shield-g')}</span>
-          <span class="rcs-shield-text">For unwanted messages, <a href="#report" class="rcs-shield-link" onclick="event.preventDefault()">block &amp; report</a></span>
-          <button type="button" class="rcs-shield-close" id="rcs-dismiss-spam-btn" aria-label="Dismiss">✕</button>
+      <!-- 4. Bottom Sheet Footer (Spam Shield Banner + Compose Bar + Gesture Pill on --app-bg) -->
+      <div class="rcs-bottom-chrome-wrap">
+        <!-- Optional Spam & Safety Shield Banner (Matches Motorola Edge 50 Pro Screenshot_20261106-104611_Messages.png) -->
+        ${agent.showSpamBanner ? `
+          <div class="rcs-spam-shield-banner">
+            <span class="rcs-shield-ico">${getIcon('shield-g')}</span>
+            <span class="rcs-shield-text">For unwanted messages, <a href="#report" class="rcs-shield-link" onclick="event.preventDefault()">block &amp; report</a></span>
+            <button type="button" class="rcs-shield-close" id="rcs-dismiss-spam-btn" aria-label="Dismiss">✕</button>
+          </div>
+        ` : ''}
+
+        <!-- Bottom Compose Bar (Matches Google Messages / Samsung / iOS 18) -->
+        ${this.renderComposeBar(isSmsFallback, isIos, isSamsung)}
+
+        <!-- OS Home Gesture Indicator Bar -->
+        <div class="rcs-os-gesture-bar">
+          <div class="rcs-gesture-pill"></div>
         </div>
-      ` : ''}
-
-      <!-- 4. Bottom Compose Bar (Matches Google Messages / Samsung / iOS 18) -->
-      ${this.renderComposeBar(isSmsFallback, isIos, isSamsung)}
-
-      <!-- 5. OS Home Gesture Indicator Bar -->
-      <div class="rcs-os-gesture-bar">
-        <div class="rcs-gesture-pill"></div>
       </div>
 
       <!-- 6. In-Phone Interactive Overlay Modals (Media Lightbox / Webview / Action Sheet / Custom Preset) -->
@@ -498,10 +516,24 @@ export class RcsPhonePreview {
           <span class="rcs-header-title">${this.escapeHtml(agent.name)}</span>
           ${agent.verified ? `<span class="rcs-verified-badge" title="Verified Business Sender">${getIcon('verified')}</span>` : ''}
         </div>
-        <button type="button" class="rcs-nav-icon-btn" aria-label="More options">
+        ${!agent.verified ? `
+          <!-- Standard 1-to-1 RCS Call & Video Header Icons (Matches Dentalia Screenshot_20261106-104620_Messages.png) -->
+          <button type="button" class="rcs-nav-icon-btn" aria-label="Call">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/>
+            </svg>
+          </button>
+          <button type="button" class="rcs-nav-icon-btn" aria-label="Video call">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor">
+              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+          </button>
+        ` : ''}
+        <button type="button" class="rcs-nav-icon-btn rcs-more-menu-btn" aria-label="More options">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
           </svg>
+          ${agent.verified ? `<span class="rcs-menu-red-dot" aria-hidden="true"></span>` : ''}
         </button>
       </div>
     `;
@@ -545,7 +577,7 @@ export class RcsPhonePreview {
       `;
     }
 
-    // 3. Rich Card Carousel (Matches Telekom Screenshot_20260617-120327.png with peeking cards)
+    // 3. Rich Card Carousel (With peeking adjacent cards)
     if (payload.templateId === 'carousel') {
       const widthSpec = CAROUSEL_WIDTH_SPECS[payload.cardWidth] || CAROUSEL_WIDTH_SPECS.MEDIUM;
       const mediaSpec = MEDIA_SPECS[payload.mediaHeight] || MEDIA_SPECS.TALL;
@@ -573,22 +605,30 @@ export class RcsPhonePreview {
       return this.renderHorizontalRichCard(firstCard, align);
     }
 
-    // 5. Stacked Multi-Card Flow (Matches DOXXbet Screenshot_20260617-120444.png)
+    // 5. Stacked Multi-Card Flow (Matches GB Žilina & Slovenská sporiteľňa Motorola Edge 50 Pro screenshots)
     if (payload.templateId === 'multi_card_feed') {
       const mediaSpec = MEDIA_SPECS[payload.mediaHeight] || MEDIA_SPECS.MEDIUM;
       return `
         <div class="rcs-stacked-cards-feed">
-          ${cards.map((c, idx) => this.renderSingleRichCard(c, {
-            idx,
-            mediaHeightPx: mediaSpec.dpHeight,
-            mediaHeightKey: payload.mediaHeight,
-            isCarousel: false
-          })).join('')}
+          ${cards.map((c, idx) => `
+            ${c.unreadDividerBefore ? `
+              <div class="rcs-unread-divider"><span>Unread</span></div>
+            ` : ''}
+            ${c.timestampBefore ? `
+              <div class="rcs-chat-timestamp is-inter-card">${this.escapeHtml(c.timestampBefore)}</div>
+            ` : ''}
+            ${this.renderSingleRichCard(c, {
+              idx,
+              mediaHeightPx: mediaSpec.dpHeight,
+              mediaHeightKey: payload.mediaHeight,
+              isCarousel: false
+            })}
+          `).join('')}
         </div>
       `;
     }
 
-    // 6. Default: Standalone Vertical Rich Card (Matches TIPOS Screenshot_20260617-120218.png)
+    // 6. Default: Standalone Vertical Rich Card (Matches Telekom faktúra Screenshot_20261106-104611_Messages.png)
     const mediaSpec = MEDIA_SPECS[payload.mediaHeight] || MEDIA_SPECS.TALL;
     return this.renderSingleRichCard(firstCard, {
       idx: 0,
@@ -602,37 +642,40 @@ export class RcsPhonePreview {
     const cropInfo = evaluateMediaCrop(card.mediaDimensions, mediaHeightKey, isCarousel, cardWidthKey);
     const isExpanded = this.state.expandedDescriptions.has(card.id || idx);
     const descLen = Array.from(card.description || '').length;
-    const shouldFold = descLen > 185 && !isExpanded;
-    const displayDesc = shouldFold ? `${card.description.slice(0, 175)}…` : (card.description || '');
+    const shouldFold = descLen > 240 && !isExpanded;
+    const displayDesc = shouldFold ? `${card.description.slice(0, 230)}…` : (card.description || '');
+    const hasMedia = Boolean(card.mediaUrl) && !card.hideMedia;
 
     return `
       <article class="rcs-rich-card ${isCarousel ? 'is-carousel-item' : 'is-standalone'}" data-card-id="${card.id || idx}">
         <!-- Media Container with Center-Crop & Optional Safe-Zone Crop Guide Overlay -->
-        <div class="rcs-card-media-wrap"
-             style="height: ${mediaHeightPx}px;"
-             data-lightbox-url="${card.mediaUrl}"
-             data-lightbox-title="${this.escapeHtml(card.title)}"
-             title="Tap thumbnail to preview full-screen media">
-          ${card.mediaType === 'video' ? `
-            <video src="${card.mediaUrl}" class="rcs-card-media-el" autoplay muted loop playsinline></video>
-          ` : `
-            <img src="${card.mediaUrl}" alt="${this.escapeHtml(card.title)}" class="rcs-card-media-el" draggable="false" />
-          `}
+        ${hasMedia ? `
+          <div class="rcs-card-media-wrap"
+               style="height: ${mediaHeightPx}px;"
+               data-lightbox-url="${card.mediaUrl}"
+               data-lightbox-title="${this.escapeHtml(card.title)}"
+               title="Tap thumbnail to preview full-screen media">
+            ${card.mediaType === 'video' ? `
+              <video src="${card.mediaUrl}" class="rcs-card-media-el" autoplay muted loop playsinline></video>
+            ` : `
+              <img src="${card.mediaUrl}" alt="${this.escapeHtml(card.title)}" class="rcs-card-media-el" draggable="false" />
+            `}
 
-          ${card.mediaType === 'gif' || card.mediaType === 'video' ? `
-            <span class="rcs-media-type-badge">${card.mediaType.toUpperCase()}</span>
-          ` : ''}
+            ${card.mediaType === 'gif' || card.mediaType === 'video' ? `
+              <span class="rcs-media-type-badge">${card.mediaType.toUpperCase()}</span>
+            ` : ''}
 
-          ${this.state.showCropGuides ? `
-            <div class="rcs-preview-crop-overlay">
-              <div class="rcs-preview-crop-safe">
-                <span>${mediaHeightKey} (${mediaHeightPx}dp) • ${cropInfo.croppedPercent > 0 ? `${cropInfo.croppedPercent}% edge crop` : '100% fit'}</span>
+            ${this.state.showCropGuides ? `
+              <div class="rcs-preview-crop-overlay">
+                <div class="rcs-preview-crop-safe">
+                  <span>${mediaHeightKey} (${mediaHeightPx}dp) • ${cropInfo.croppedPercent > 0 ? `${cropInfo.croppedPercent}% edge crop` : '100% fit'}</span>
+                </div>
               </div>
-            </div>
-          ` : ''}
-        </div>
+            ` : ''}
+          </div>
+        ` : ''}
 
-        <!-- Card Body (Title + Description + Stacked Pill Action Buttons) -->
+        <!-- Card Body (Title + Description + Segmented Material 3 Expressive Action Buttons) -->
         <div class="rcs-card-content">
           ${card.title ? `
             <h3 class="rcs-card-title" title="Max 2 lines visible">${this.escapeHtml(card.title)}</h3>
@@ -647,16 +690,19 @@ export class RcsPhonePreview {
 
           ${(card.suggestions || []).length ? `
             <div class="rcs-card-actions-stack">
-              ${(card.suggestions || []).slice(0, 4).map((sug) => `
-                <button type="button"
-                        class="rcs-card-action-btn"
-                        data-action-type="${sug.type}"
-                        data-action-text="${this.escapeHtml(sug.text)}"
-                        data-action-val="${this.escapeHtml(sug.value || '')}">
-                  <span class="rcs-action-circle-ico">${getIcon(this.getActionIconName(sug.type))}</span>
-                  <span class="rcs-action-label">${this.escapeHtml(sug.text.slice(0, 25))}</span>
-                </button>
-              `).join('')}
+              ${(card.suggestions || []).slice(0, 4).map((sug) => {
+                const isReplyRow = sug.type === 'reply';
+                return `
+                  <button type="button"
+                          class="rcs-card-action-btn ${isReplyRow ? 'is-reply-row' : 'is-action-row'}"
+                          data-action-type="${sug.type}"
+                          data-action-text="${this.escapeHtml(sug.text)}"
+                          data-action-val="${this.escapeHtml(sug.value || '')}">
+                    ${!isReplyRow ? `<span class="rcs-action-circle-ico">${getIcon(this.getActionIconName(sug.type))}</span>` : ''}
+                    <span class="rcs-action-label">${this.escapeHtml(sug.text.slice(0, 25))}</span>
+                  </button>
+                `;
+              }).join('')}
             </div>
           ` : ''}
         </div>
@@ -686,16 +732,19 @@ export class RcsPhonePreview {
 
         ${(card.suggestions || []).length ? `
           <div class="rcs-card-actions-stack is-horiz-actions">
-            ${(card.suggestions || []).slice(0, 4).map((sug) => `
-              <button type="button"
-                      class="rcs-card-action-btn"
-                      data-action-type="${sug.type}"
-                      data-action-text="${this.escapeHtml(sug.text)}"
-                      data-action-val="${this.escapeHtml(sug.value || '')}">
-                <span class="rcs-action-circle-ico">${getIcon(this.getActionIconName(sug.type))}</span>
-                <span class="rcs-action-label">${this.escapeHtml(sug.text.slice(0, 25))}</span>
-              </button>
-            `).join('')}
+            ${(card.suggestions || []).slice(0, 4).map((sug) => {
+              const isReplyRow = sug.type === 'reply';
+              return `
+                <button type="button"
+                        class="rcs-card-action-btn ${isReplyRow ? 'is-reply-row' : 'is-action-row'}"
+                        data-action-type="${sug.type}"
+                        data-action-text="${this.escapeHtml(sug.text)}"
+                        data-action-val="${this.escapeHtml(sug.value || '')}">
+                  ${!isReplyRow ? `<span class="rcs-action-circle-ico">${getIcon(this.getActionIconName(sug.type))}</span>` : ''}
+                  <span class="rcs-action-label">${this.escapeHtml(sug.text.slice(0, 25))}</span>
+                </button>
+              `;
+            }).join('')}
           </div>
         ` : ''}
       </article>
@@ -722,36 +771,39 @@ export class RcsPhonePreview {
     return `
       <div class="rcs-compose-bar ${isSamsung ? 'is-samsung' : 'is-google'}">
         <div class="rcs-google-input-pill">
-          <!-- Plus icon with notification dot matching real screenshot -->
+          <!-- Plus icon with RCS teal badge dot matching Motorola Edge 50 Pro screenshot -->
           <button type="button" class="rcs-compose-ico-btn" aria-label="Attach">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M12 8v8M8 12h8" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="8.8"/>
+              <path d="M12 8.2v7.6M8.2 12h7.6" stroke-linecap="round"/>
+              <circle cx="18.2" cy="5.8" r="2.6" fill="var(--verified-color)" stroke="var(--card-bg)" stroke-width="1.2"/>
             </svg>
           </button>
           <input type="text" id="rcs-live-chat-input" class="rcs-compose-input" placeholder="${placeholder}" />
-          <!-- Emoji smiley icon -->
+          <!-- Emoji smiley icon with RCS teal badge dot matching Motorola Edge 50 Pro screenshot -->
           <button type="button" class="rcs-compose-ico-btn" aria-label="Emoji">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
-              <circle cx="12" cy="12" r="9"/>
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="8.8"/>
               <path d="M8.5 14.5s1.5 2 3.5 2 3.5-2 3.5-2" stroke-linecap="round"/>
-              <circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/>
+              <circle cx="9.2" cy="10.2" r="1.1" fill="currentColor" stroke="none"/>
+              <circle cx="14.8" cy="10.2" r="1.1" fill="currentColor" stroke="none"/>
+              <circle cx="18.2" cy="5.8" r="2.6" fill="var(--verified-color)" stroke="var(--card-bg)" stroke-width="1.2"/>
             </svg>
           </button>
           <!-- Image gallery icon -->
           <button type="button" class="rcs-compose-ico-btn" aria-label="Gallery">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
-              <rect x="3" y="4" width="18" height="16" rx="2.5"/>
-              <circle cx="8.5" cy="9" r="1.5"/>
-              <path d="m21 15-5-5L5 20"/>
+              <rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/>
+              <circle cx="8.5" cy="9.2" r="1.4"/>
+              <path d="m20.5 15-4.8-4.8L5.5 19.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
 
-        <!-- Circular Green Voice Note / Waveform Button (Matches real Google Messages screenshot) -->
+        <!-- Circular Sky-Blue Voice Note / Waveform Button (Matches Motorola Edge 50 Pro #cfe5ff FAB) -->
         <button type="button" class="rcs-voice-fab" id="rcs-send-or-voice-btn" title="Send message or voice note">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M4 12v1M8 8v8M12 5v14M16 8v8M20 11v2" stroke-linecap="round"/>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.1">
+            <path d="M5 11v2M8.5 8.5v7M12 5.5v13M15.5 8.5v7M19 11v2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>

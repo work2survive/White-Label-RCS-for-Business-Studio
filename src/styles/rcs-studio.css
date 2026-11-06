@@ -1414,10 +1414,10 @@ html, body {
   top: 0;
   left: 0;
   flex-shrink: 0;
-  transform: scale(var(--phone-scale, 0.68));
+  transform: scale(var(--phone-scale, 0.65));
   transform-origin: top left;
-  background: #ffffff;
-  color: #1f1f1f;
+  background: var(--header-bg, #e7f0ed);
+  color: var(--app-text, #191c1b);
   border: 10px solid #1e242d;
   box-shadow:
     0 0 0 2px #3b4454,
@@ -1427,43 +1427,47 @@ html, body {
   overflow: hidden;
   user-select: none;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
-  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+  font-family: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
 }
 
 .rcs-phone-hardware * {
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
-/* Theme Palettes (Google Messages Material 3 Light & Dark) */
+/* Theme Palettes (Calibrated to Motorola Edge 50 Pro Google Messages Material You Teal Palette) */
 .rcs-phone-hardware.is-theme-light {
-  --app-bg: #ffffff;
-  --app-surface: #eff2f7;
-  --app-surface-2: #e8edf4;
-  --app-text: #1f1f1f;
-  --app-text-sub: #444746;
-  --app-border: #e1e3e6;
-  --card-bg: #eff2f7;
-  --action-btn-bg: #ffffff;
-  --action-ico-bg: #e8edf4;
-  --verified-color: #1b6ef3;
-  --voice-fab-bg: #c4eed0;
-  --voice-fab-fg: #0f5223;
+  --header-bg: #e7f0ed;
+  --app-bg: #f3fbf9;
+  --app-surface: #e7f0ed;
+  --app-surface-2: #dce8e4;
+  --app-text: #191c1b;
+  --app-text-sub: #3f4947;
+  --app-border: #cde0db;
+  --card-bg: #e7f0ed;
+  --action-btn-bg: #f3fbf9;
+  --action-ico-bg: #e7f0ed;
+  --verified-color: #006a64;
+  --user-bubble-bg: #006a64;
+  --voice-fab-bg: #cfe5ff;
+  --voice-fab-fg: #001d35;
 }
 
 .rcs-phone-hardware.is-theme-dark {
-  --app-bg: #111318;
-  --app-surface: #1e232c;
-  --app-surface-2: #282f3d;
-  --app-text: #e3e3e3;
-  --app-text-sub: #9aa0a6;
-  --app-border: #2d323b;
-  --card-bg: #1e232c;
-  --action-btn-bg: #2b313e;
-  --action-ico-bg: #384050;
-  --verified-color: #669df6;
-  --voice-fab-bg: #1e5631;
-  --voice-fab-fg: #bbf7d0;
-  background: var(--app-bg);
+  --header-bg: #0e1513;
+  --app-bg: #141d1b;
+  --app-surface: #1d2826;
+  --app-surface-2: #263431;
+  --app-text: #e0e3e1;
+  --app-text-sub: #899390;
+  --app-border: #2b3835;
+  --card-bg: #1d2826;
+  --action-btn-bg: #141d1b;
+  --action-ico-bg: #263431;
+  --verified-color: #4ddada;
+  --user-bubble-bg: #00504b;
+  --voice-fab-bg: #004a77;
+  --voice-fab-fg: #c2e7ff;
+  background: var(--header-bg);
   color: var(--app-text);
 }
 
@@ -1511,18 +1515,48 @@ html, body {
   z-index: 25;
 }
 
-/* 1. OS Status Bar (Matches 12:04 + 4G + Battery in user screenshots) */
+/* 1. OS Status Bar (Exact match to Motorola Edge 50 Pro 10:46 status bar) */
 .rcs-os-statusbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 30px;
+  height: 32px;
   padding: 4px 18px 0;
-  background: var(--app-bg);
+  background: var(--header-bg);
   color: var(--app-text);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   flex-shrink: 0;
+}
+
+.rcs-status-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rcs-status-time {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.rcs-status-notif-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.88;
+}
+
+.rcs-status-mini-txt {
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rcs-status-dot {
+  font-size: 11px;
+  line-height: 1;
 }
 
 .rcs-status-right {
@@ -1564,19 +1598,20 @@ html, body {
   background: currentColor;
 }
 
-/* 2. Messaging App Top Header (Matches Google Messages, Samsung One UI, iOS 18) */
+/* 2. Messaging App Top Header (Matches Motorola Edge 50 Pro 54dp Header on #e7f0ed) */
 .rcs-app-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   height: 54px;
-  padding: 0 10px;
-  background: var(--app-bg);
+  padding: 0 8px 0 6px;
+  background: var(--header-bg);
   color: var(--app-text);
   flex-shrink: 0;
 }
 
 .rcs-nav-icon-btn {
+  position: relative;
   background: transparent;
   border: none;
   color: var(--app-text);
@@ -1589,6 +1624,16 @@ html, body {
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
+.rcs-menu-red-dot {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b3261e;
+}
+
 .rcs-header-avatar {
   width: 36px;
   height: 36px;
@@ -1597,7 +1642,7 @@ html, body {
 }
 
 .rcs-header-avatar.is-rounded {
-  border-radius: 10px;
+  border-radius: 50%;
 }
 
 .rcs-header-avatar.is-circle {
@@ -1609,12 +1654,13 @@ html, body {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .rcs-header-title {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 16.5px;
+  font-weight: 400;
+  letter-spacing: 0;
   color: var(--app-text);
   white-space: nowrap;
   overflow: hidden;
@@ -1674,15 +1720,16 @@ html, body {
   font-weight: 600;
 }
 
-/* 3. Scrollable Conversation Feed (Native scrollbars hidden to match real mobile OS UI) */
+/* 3. Top-Rounded Conversation Sheet (Matches Motorola Edge 50 Pro #f3fbf9 sheet with 24px top corners) */
 .rcs-chat-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 6px 8px 14px;
+  padding: 10px 8px 12px;
   background: var(--app-bg);
+  border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1695,28 +1742,25 @@ html, body {
   height: 0;
 }
 
-/* Large Agent Profile Header (Matches TIPOS Screenshot_20260617-120218.png) */
+/* Large Centered Agent Profile Header (Matches GB Žilina Screenshot_20261106-104424_Messages.png) */
 .rcs-agent-hero-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 14px 18px 16px;
-  margin: 0 -8px 4px;
-  border-bottom: 1px solid var(--app-border);
+  padding: 16px 18px 14px;
+  margin: 0 -8px 2px;
 }
 
 .rcs-agent-hero-logo {
-  width: 68px;
-  height: 68px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  border-radius: 50%;
 }
 
-.rcs-agent-hero-logo.is-rounded {
-  border-radius: 16px;
-}
-
+.rcs-agent-hero-logo.is-rounded,
 .rcs-agent-hero-logo.is-circle {
   border-radius: 50%;
 }
@@ -1726,16 +1770,16 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 400;
   color: var(--app-text);
   margin-bottom: 6px;
 }
 
 .rcs-agent-hero-tagline {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.42;
   color: var(--app-text-sub);
   max-width: 310px;
 }
@@ -1744,11 +1788,36 @@ html, body {
 .rcs-chat-system-notice {
   text-align: center;
   font-size: 11.5px;
+  font-weight: 400;
   color: var(--app-text-sub);
   margin: 2px 0;
 }
 
-/* Message Container & Rich Card (Matches Google Messages M3) */
+.rcs-chat-timestamp.is-inter-card {
+  margin: 6px 0 2px;
+}
+
+/* Teal "Unread" Horizontal Divider (Matches GB Žilina Screenshot_20261106-104406_Messages.png) */
+.rcs-unread-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 2px 4px;
+  color: var(--verified-color);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.rcs-unread-divider::before,
+.rcs-unread-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--verified-color);
+  opacity: 0.65;
+}
+
+/* Message Container & Rich Card (Exact Motorola Edge 50 Pro 8dp side margin & 20dp corner radius) */
 .rcs-message-group {
   display: flex;
   flex-direction: column;
@@ -1763,7 +1832,7 @@ html, body {
 
 .rcs-rich-card {
   background: var(--card-bg);
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1813,7 +1882,7 @@ html, body {
 .rcs-preview-crop-overlay {
   position: absolute;
   inset: 0;
-  border: 2px dashed rgba(245, 158, 11, 0.85);
+  border: 1.5px dashed rgba(245, 158, 11, 0.75);
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -1830,18 +1899,20 @@ html, body {
   border-radius: 4px;
 }
 
+/* Card Content Padding & Typography (Matched to Motorola Edge 50 Pro 16dp horizontal padding) */
 .rcs-card-content {
-  padding: 13px 14px 12px;
+  padding: 15px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .rcs-card-title {
   margin: 0;
   font-size: 15.5px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1.34;
+  letter-spacing: 0;
   color: var(--app-text);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1850,8 +1921,9 @@ html, body {
 }
 
 .rcs-card-desc {
-  font-size: 13.8px;
-  line-height: 1.42;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.43;
   color: var(--app-text);
   word-break: break-word;
 }
@@ -1866,12 +1938,12 @@ html, body {
   padding: 0 4px;
 }
 
-/* Stacked White Pill Action Buttons (Exact match to DOXXbet & Telekom screenshots!) */
+/* Segmented Material 3 Expressive Action Buttons (Exact match to Motorola Edge 50 Pro screenshots!) */
 .rcs-card-actions-stack {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-top: 4px;
+  gap: 2px;
+  margin-top: 6px;
 }
 
 .rcs-card-action-btn {
@@ -1879,18 +1951,40 @@ html, body {
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 46px;
-  padding: 7px 14px 7px 9px;
+  min-height: 52px;
+  padding: 8px 16px 8px 14px;
   background: var(--action-btn-bg);
   color: var(--app-text);
   border: none;
-  border-radius: 16px;
+  border-radius: 18px;
   font-family: inherit;
-  font-size: 13.8px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   text-align: left;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
   transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+/* Quick Reply rows in Google Messages M3 have no left icon circle and left-align text at 16px padding */
+.rcs-card-action-btn.is-reply-row {
+  padding-left: 16px;
+}
+
+/* Material 3 Expressive Grouped Button Corner Radii (18px outer corners, 5px inner adjacent corners) */
+.rcs-card-action-btn:only-child {
+  border-radius: 18px;
+}
+
+.rcs-card-action-btn:first-child:not(:only-child) {
+  border-radius: 18px 18px 5px 5px;
+}
+
+.rcs-card-action-btn:not(:first-child):not(:last-child) {
+  border-radius: 5px;
+}
+
+.rcs-card-action-btn:last-child:not(:only-child) {
+  border-radius: 5px 5px 18px 18px;
 }
 
 .rcs-card-action-btn:hover {
@@ -1902,8 +1996,8 @@ html, body {
 }
 
 .rcs-action-circle-ico {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--action-ico-bg);
   color: var(--app-text);
@@ -1920,7 +2014,7 @@ html, body {
   white-space: nowrap;
 }
 
-/* Rich Card Carousel (Matches Telekom Screenshot_20260617-120327.png with peeking neighbor cards!) */
+/* Rich Card Carousel (With peeking neighbor cards) */
 .rcs-carousel-track {
   display: flex;
   gap: 8px;
@@ -1956,7 +2050,7 @@ html, body {
 
 /* Horizontal Rich Card (Left / Right Side Thumbnail) */
 .rcs-rich-card.is-horizontal {
-  padding: 12px;
+  padding: 14px;
   gap: 10px;
 }
 
@@ -1974,7 +2068,7 @@ html, body {
   position: relative;
   width: 106px;
   height: 118px;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
@@ -1991,8 +2085,8 @@ html, body {
 /* Conversational Text + Floating Suggestion Chips */
 .rcs-plain-rcs-bubble {
   background: var(--card-bg);
-  padding: 11px 14px;
-  border-radius: 18px 18px 18px 6px;
+  padding: 11px 15px;
+  border-radius: 20px 20px 20px 6px;
   max-width: 88%;
   display: flex;
   flex-direction: column;
@@ -2010,30 +2104,30 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 13px;
+  padding: 8px 14px;
   border-radius: 18px;
-  background: var(--app-bg);
+  background: var(--action-btn-bg);
   border: 1px solid var(--app-border);
   color: var(--app-text);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 400;
   white-space: nowrap;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 /* SMS Fallback Bubble */
 .rcs-sms-bubble-card {
   background: var(--card-bg);
-  padding: 12px 14px;
-  border-radius: 18px 18px 18px 4px;
+  padding: 12px 15px;
+  border-radius: 20px 20px 20px 4px;
   max-width: 90%;
   border-left: 3px solid #f59e0b;
 }
 
 .rcs-sms-text {
-  font-size: 13.8px;
-  line-height: 1.42;
+  font-size: 14px;
+  line-height: 1.43;
   color: var(--app-text);
 }
 
@@ -2047,10 +2141,10 @@ html, body {
 .rcs-msg-delivery-time {
   font-size: 11px;
   color: var(--app-text-sub);
-  padding-left: 10px;
+  padding-left: 12px;
 }
 
-/* Interactive User / Agent Reply Bubbles */
+/* Interactive User / Agent Reply Bubbles (Matches Dentalia #006a64 Teal User Bubbles) */
 .rcs-chat-bubble-row {
   display: flex;
   flex-direction: column;
@@ -2068,26 +2162,26 @@ html, body {
 
 .rcs-chat-bubble {
   max-width: 82%;
-  padding: 9px 14px;
-  border-radius: 18px;
-  font-size: 13.8px;
-  line-height: 1.38;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .rcs-chat-bubble.is-user {
-  background: var(--user-bubble-bg, #0b57d0);
+  background: var(--user-bubble-bg, #006a64);
   color: #ffffff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 6px;
 }
 
 .rcs-chat-bubble.is-agent {
   background: var(--card-bg);
   color: var(--app-text);
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
 .rcs-bubble-time {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--app-text-sub);
   padding: 0 6px;
 }
@@ -2114,10 +2208,10 @@ html, body {
 .rcs-typing-indicator span:nth-child(2) { animation-delay: 0.18s; }
 .rcs-typing-indicator span:nth-child(3) { animation-delay: 0.36s; }
 
-/* Floating Scroll-to-Bottom Button (Matches TIPOS screenshot) */
+/* Floating Scroll-to-Bottom Button */
 .rcs-floating-scroll-btn {
   position: absolute;
-  bottom: 72px;
+  bottom: 76px;
   left: 50%;
   transform: translateX(-50%);
   width: 36px;
@@ -2134,25 +2228,35 @@ html, body {
   z-index: 15;
 }
 
-/* Spam & Safety Shield Banner (Matches Telekom screenshot) */
+/* 4. Bottom Chrome Wrapper (Keeps Spam Banner + Compose Bar + Gesture Bar on --app-bg #f3fbf9) */
+.rcs-bottom-chrome-wrap {
+  background: var(--app-bg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Spam & Safety Shield Banner (Exact match to Motorola Edge 50 Pro Screenshot_20261106-104611_Messages.png) */
 .rcs-spam-shield-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 12px 6px;
-  padding: 8px 12px;
-  background: var(--app-surface);
-  border-radius: 22px;
+  gap: 10px;
+  margin: 2px 34px 6px;
+  min-height: 52px;
+  padding: 8px 14px;
+  background: var(--card-bg);
+  border-radius: 26px;
   font-size: 12px;
+  line-height: 1.32;
   color: var(--app-text);
   flex-shrink: 0;
 }
 
 .rcs-shield-ico {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: #0b57d0;
+  background: var(--verified-color);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -2170,7 +2274,7 @@ html, body {
 }
 
 .rcs-shield-link {
-  color: #0b57d0;
+  color: var(--app-text);
   text-decoration: underline;
   font-weight: 500;
 }
@@ -2180,15 +2284,16 @@ html, body {
   border: none;
   color: var(--app-text-sub);
   font-size: 14px;
+  padding: 2px 4px;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
-/* 4. Bottom Compose Bar (Matches Google Messages screenshot) */
+/* Bottom Compose Bar (Exact match to Motorola Edge 50 Pro 52dp pill + 52dp #cfe5ff Voice FAB) */
 .rcs-compose-bar {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 10px 6px;
+  gap: 8px;
+  padding: 4px 8px 6px;
   background: var(--app-bg);
   flex-shrink: 0;
 }
@@ -2198,10 +2303,10 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 44px;
-  padding: 0 10px;
-  background: var(--app-surface);
-  border-radius: 24px;
+  height: 52px;
+  padding: 0 12px;
+  background: var(--card-bg);
+  border-radius: 26px;
 }
 
 .rcs-compose-ico-btn {
@@ -2210,6 +2315,8 @@ html, body {
   color: var(--app-text-sub);
   padding: 2px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), none !important;
 }
 
@@ -2221,6 +2328,7 @@ html, body {
   outline: none;
   color: var(--app-text);
   font-size: 14px;
+  font-weight: 400;
   font-family: inherit;
 }
 
@@ -2229,8 +2337,8 @@ html, body {
 }
 
 .rcs-voice-fab {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--voice-fab-bg);
   color: var(--voice-fab-fg);
@@ -2280,11 +2388,11 @@ html, body {
 }
 
 .rcs-gesture-pill {
-  width: 120px;
+  width: 108px;
   height: 4px;
   border-radius: 2px;
-  background: var(--app-text-sub);
-  opacity: 0.55;
+  background: var(--app-text);
+  opacity: 0.65;
 }
 
 /* In-Phone Modal Overlays (Lightbox / Webview / Custom Preset) */
