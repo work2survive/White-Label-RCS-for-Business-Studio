@@ -1,4 +1,6 @@
-# White-Label RCS for Business Solution — Template Chooser & Mobile Simulator SDK
+# White-Label RCS for Business Studio — Template Chooser & Mobile Simulator SDK
+
+> **🚀 Live Interactive Demo (GitHub Pages):** [**https://work2survive.github.io/White-Label-RCS-for-Business-Studio/**](https://work2survive.github.io/White-Label-RCS-for-Business-Studio/)
 
 Framework-agnostic, zero-dependency HTML5 / ES6 JavaScript SDK for designing **RCS for Business (RBM)** Rich Card flows, validating character & media crop specifications in real time, and previewing the exact mobile outcome across **Google Messages (Android 14/15 Material 3)**, **Samsung Messages (One UI 6/7)**, and **Apple Messages (iOS 18+ RCS)** in **Light** and **Dark** themes.
 
