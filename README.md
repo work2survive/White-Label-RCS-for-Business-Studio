@@ -60,7 +60,7 @@ flowchart LR
 ## 3. Project Structure
 
 ```text
-White-Label-RCS-fpor-Business-Solution/
+White-Label-RCS-for-Business-Studio/
 ├── index.html                        # Self-contained, portable zero-build bundle (GitHub Pages ready)
 ├── README.md                         # Project documentation & SDK API guide
 ├── assets/
