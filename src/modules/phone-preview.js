@@ -245,12 +245,42 @@ export class RcsPhonePreview {
     return this.devices.find((d) => d.id === this.state.deviceId) || this.devices[0];
   }
 
+  /**
+   * Returns only the messaging app skins compatible with the selected hardware device:
+   * - Apple iPhone -> only Apple Messages (iOS 18+ RCS), never Android apps.
+   * - Non-Samsung Android (Motorola, Google Pixel) -> only Google Messages, never Apple or Samsung Messages.
+   * - Samsung Android -> Samsung Messages (One UI) + Google Messages, never Apple Messages.
+   */
+  getAllowedSkinsForDevice(device = this.getCurrentDevice()) {
+    if (Array.isArray(device.allowedSkins) && device.allowedSkins.length > 0) {
+      return this.skins.filter((s) => device.allowedSkins.includes(s.id));
+    }
+    if (device.os === 'ios' || String(device.brand).toLowerCase().includes('apple')) {
+      return this.skins.filter((s) => s.id === 'ios_18_messages');
+    }
+    const isSamsungDevice =
+      String(device.brand).toLowerCase().includes('samsung') ||
+      String(device.name).toLowerCase().includes('galaxy') ||
+      String(device.name).toLowerCase().includes('samsung');
+    if (isSamsungDevice) {
+      return this.skins.filter((s) => s.id === 'samsung_messages_oneui' || s.id === 'google_messages_m3');
+    }
+    return this.skins.filter((s) => s.id === 'google_messages_m3');
+  }
+
   getCurrentSkin() {
-    return this.skins.find((s) => s.id === this.state.skinId) || this.skins[0];
+    const device = this.getCurrentDevice();
+    const allowedSkins = this.getAllowedSkinsForDevice(device);
+    const matched = allowedSkins.find((s) => s.id === this.state.skinId);
+    if (matched) return matched;
+    const defaultSkin = allowedSkins.find((s) => s.id === device.defaultSkin) || allowedSkins[0] || this.skins[0];
+    this.state.skinId = defaultSkin.id;
+    return defaultSkin;
   }
 
   render() {
     const device = this.getCurrentDevice();
+    const allowedSkins = this.getAllowedSkinsForDevice(device);
     const skin = this.getCurrentSkin();
     const isSmsFallback = this.state.channelOverride === 'sms_fallback' || this.state.payload.templateId === 'sms_regular';
     const zoomPct = Math.round(this.state.zoom * 100);
@@ -276,9 +306,12 @@ export class RcsPhonePreview {
               `).join('')}
             </select>
 
-            <!-- OS / Messaging App Skin Selector -->
-            <select id="rcs-skin-select" class="rcs-select-compact" title="Choose Messaging App UI Version">
-              ${this.skins.map((s) => `
+            <!-- OS / Messaging App Skin Selector (Filtered automatically by selected phone brand & OS) -->
+            <select id="rcs-skin-select"
+                    class="rcs-select-compact"
+                    title="${allowedSkins.length === 1 ? `Locked to ${skin.name} for ${device.name}` : 'Choose Messaging App UI Version'}"
+                    ${allowedSkins.length === 1 ? 'disabled' : ''}>
+              ${allowedSkins.map((s) => `
                 <option value="${s.id}" ${s.id === skin.id ? 'selected' : ''}>💬 ${s.shortName} (${s.version})</option>
               `).join('')}
             </select>
@@ -1531,12 +1564,20 @@ export class RcsPhonePreview {
         const newId = `custom_${Date.now()}`;
         const nativeWidth = (width - 20) * 3;
         const nativeHeight = (height - 20) * 3;
+        const isIosPreset = skinId.includes('ios');
+        const isSamsungPreset = skinId === 'samsung_messages_oneui' || /samsung|galaxy/i.test(name);
+        const allowedSkins = isIosPreset
+          ? ['ios_18_messages']
+          : isSamsungPreset
+            ? ['samsung_messages_oneui', 'google_messages_m3']
+            : ['google_messages_m3'];
         this.devices.push({
           id: newId,
           name,
-          brand: 'Custom',
-          os: skinId.includes('ios') ? 'ios' : 'android',
+          brand: isIosPreset ? 'Apple' : isSamsungPreset ? 'Samsung' : 'Custom',
+          os: isIosPreset ? 'ios' : 'android',
           defaultSkin: skinId,
+          allowedSkins,
           width,
           height,
           nativeWidth,
