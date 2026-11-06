@@ -66,6 +66,7 @@ export class RcsPhonePreview {
       zoomMode: options.zoomMode || 'fit', // 'fit' (default) | 'manual'
       zoom: options.zoom || 0.65, // Computed dynamically when zoomMode === 'fit'
       channelOverride: null, // null (live RCS) | 'sms_fallback'
+      showPhoneFrame: options.showPhoneFrame ?? true, // Toggle phone hardware frame, camera hole & Dynamic Island
       showCropGuides: options.showCropGuides ?? false,
       agent: structuredClone(options.agent || defaultPreset.agent),
       payload: structuredClone(options.payload || defaultPreset.payload),
@@ -253,6 +254,17 @@ export class RcsPhonePreview {
   }
 
   /**
+   * Returns outer viewport dimensions depending on whether the physical phone frame is enabled.
+   * When `showPhoneFrame` is false, the 10px hardware bezel on each side (20px total) is removed.
+   */
+  getEffectiveFrameDimensions(device = this.getCurrentDevice()) {
+    if (this.state.showPhoneFrame) {
+      return { width: device.width, height: device.height };
+    }
+    return { width: device.width - 20, height: device.height - 20 };
+  }
+
+  /**
    * Returns only the messaging app skins compatible with the selected hardware device:
    * - Apple iPhone -> only Apple Messages (iOS 18+ RCS), never Android apps.
    * - Non-Samsung Android (Motorola, Google Pixel) -> only Google Messages, never Apple or Samsung Messages.
@@ -287,6 +299,7 @@ export class RcsPhonePreview {
 
   render() {
     const device = this.getCurrentDevice();
+    const frameDims = this.getEffectiveFrameDimensions(device);
     const allowedSkins = this.getAllowedSkinsForDevice(device);
     const skin = this.getCurrentSkin();
     const isSmsFallback = this.state.channelOverride === 'sms_fallback' || this.state.payload.templateId === 'sms_regular';
@@ -329,8 +342,16 @@ export class RcsPhonePreview {
             </button>
           </div>
 
-          <!-- Theme, Channel Mode, Visual Guides, Zoom & Screenshot Controls -->
+          <!-- Frame, Visual Guides, Channel Mode, Theme, Zoom & Screenshot Controls -->
           <div class="rcs-toolbar-group">
+            <button type="button"
+                    class="rcs-icon-btn ${this.state.showPhoneFrame ? 'is-active' : ''}"
+                    id="rcs-toggle-frame-btn"
+                    title="Switch mobile phone frame, bezel, camera hole, and Dynamic Island ON or OFF">
+              ${getIcon('device')}
+              <span>${this.state.showPhoneFrame ? 'Frame ON' : 'Frame OFF'}</span>
+            </button>
+
             <button type="button"
                     class="rcs-icon-btn ${this.state.showCropGuides ? 'is-active-warn' : ''}"
                     id="rcs-toggle-guides-btn"
@@ -375,12 +396,12 @@ export class RcsPhonePreview {
           <span class="rcs-gesture-hint">💡 Drag carousels, tap thumbnails to zoom, or click buttons to test flow</span>
         </div>
 
-        <!-- Main Stage (Phone Hardware Frame) -->
+        <!-- Main Stage (Phone Hardware Frame or Frameless Screen) -->
         <div class="rcs-stage-wrap" id="rcs-stage-wrap">
-          <div class="rcs-phone-scale-container" id="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(device.width * this.state.zoom)}px; height: ${Math.round(device.height * this.state.zoom)}px;">
-            <div class="rcs-phone-hardware is-os-${device.os} is-skin-${skin.id} is-theme-${this.state.theme} is-cutout-${device.cutout}"
+          <div class="rcs-phone-scale-container" id="rcs-phone-scale-container" style="--phone-scale: ${this.state.zoom}; width: ${Math.round(frameDims.width * this.state.zoom)}px; height: ${Math.round(frameDims.height * this.state.zoom)}px;">
+            <div class="rcs-phone-hardware is-os-${device.os} is-skin-${skin.id} is-theme-${this.state.theme} is-cutout-${device.cutout} ${this.state.showPhoneFrame ? '' : 'is-frameless'}"
                  id="rcs-phone-viewport-host"
-                 style="width: ${device.width}px; height: ${device.height}px; min-width: ${device.width}px; max-width: ${device.width}px; min-height: ${device.height}px; max-height: ${device.height}px; border-radius: ${device.bezelRadius}px; --screen-radius: ${device.screenRadius}px;">
+                 style="width: ${frameDims.width}px; height: ${frameDims.height}px; min-width: ${frameDims.width}px; max-width: ${frameDims.width}px; min-height: ${frameDims.height}px; max-height: ${frameDims.height}px; border-radius: ${this.state.showPhoneFrame ? device.bezelRadius : 0}px; --screen-radius: ${this.state.showPhoneFrame ? device.screenRadius : 0}px;">
               ${this.renderPhoneScreenContents(device, skin, isSmsFallback)}
             </div>
           </div>
@@ -409,8 +430,8 @@ export class RcsPhonePreview {
     const isSamsung = skin.id === 'samsung_messages_oneui';
 
     return `
-      <!-- Hardware Cutout (Punch-hole / Dynamic Island / Fold Crease) -->
-      <div class="rcs-hw-cutout"></div>
+      <!-- Hardware Cutout (Punch-hole / Dynamic Island / Fold Crease) — Hidden when Frame OFF -->
+      ${this.state.showPhoneFrame ? `<div class="rcs-hw-cutout"></div>` : ''}
 
       <!-- 1. Authentic Mobile OS Status Bar (Matched to Motorola Edge 50 Pro 10:46 Status Bar) -->
       <div class="rcs-os-statusbar">
@@ -1095,15 +1116,15 @@ export class RcsPhonePreview {
 
   /**
    * Computes the largest uniform scale factor (`zoom`) that fits the selected device's
-   * outer hardware frame (`device.width × device.height`) inside `#rcs-stage-wrap` with a small breathing margin.
+   * outer hardware frame (or frameless screen) inside `#rcs-stage-wrap` with a small breathing margin.
    */
   recalculateFitZoom() {
     const stage = this.root.querySelector('#rcs-stage-wrap');
     if (!stage) return;
-    const device = this.getCurrentDevice();
+    const frameDims = this.getEffectiveFrameDimensions();
     const availW = Math.max(200, stage.clientWidth - 20);
     const availH = Math.max(240, stage.clientHeight - 20);
-    const fitScale = Math.min(availW / device.width, availH / device.height);
+    const fitScale = Math.min(availW / frameDims.width, availH / frameDims.height);
     const clampedZoom = Math.max(0.38, Math.min(1.8, Math.floor(fitScale * 1000) / 1000));
     this.state.zoom = clampedZoom;
     this.applyZoomDOM();
@@ -1113,14 +1134,14 @@ export class RcsPhonePreview {
    * Updates the DOM scale variables and toolbar readout in-place without re-creating the phone DOM.
    */
   applyZoomDOM() {
-    const device = this.getCurrentDevice();
+    const frameDims = this.getEffectiveFrameDimensions();
     const scaleContainer = this.root.querySelector('#rcs-phone-scale-container');
     const readout = this.root.querySelector('#rcs-zoom-readout');
     const fitBtn = this.root.querySelector('#rcs-zoom-fit');
     if (scaleContainer) {
       scaleContainer.style.setProperty('--phone-scale', String(this.state.zoom));
-      scaleContainer.style.width = `${Math.round(device.width * this.state.zoom)}px`;
-      scaleContainer.style.height = `${Math.round(device.height * this.state.zoom)}px`;
+      scaleContainer.style.width = `${Math.round(frameDims.width * this.state.zoom)}px`;
+      scaleContainer.style.height = `${Math.round(frameDims.height * this.state.zoom)}px`;
     }
     if (readout) {
       readout.textContent = `${Math.round(this.state.zoom * 100)}%`;
@@ -1315,6 +1336,21 @@ export class RcsPhonePreview {
       openPresetModalBtn.addEventListener('click', () => {
         this.state.activeModal = { type: 'preset-builder' };
         this.renderViewportOnly();
+      });
+    }
+
+    const toggleFrameBtn = this.root.querySelector('#rcs-toggle-frame-btn');
+    if (toggleFrameBtn) {
+      toggleFrameBtn.addEventListener('click', () => {
+        this.state.showPhoneFrame = !this.state.showPhoneFrame;
+        this.render();
+        this.attachEvents();
+        if (this.state.zoomMode === 'fit') {
+          this.recalculateFitZoom();
+        } else {
+          this.applyZoomDOM();
+        }
+        this.logTelemetry('FRAME_TOGGLE', { showPhoneFrame: this.state.showPhoneFrame });
       });
     }
 

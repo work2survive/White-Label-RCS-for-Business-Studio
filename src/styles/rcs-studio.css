@@ -1782,6 +1782,18 @@ html, body {
   z-index: 25;
 }
 
+/* Frameless Mode (Frame OFF): Hides phone bezel, rounded corners, camera punch-hole, Dynamic Island & fold crease */
+.rcs-phone-hardware.is-frameless {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.52) !important;
+}
+
+.rcs-phone-hardware.is-frameless .rcs-hw-cutout,
+.rcs-phone-hardware.is-frameless::after {
+  display: none !important;
+}
+
 /* 1. OS Status Bar (Exact match to Motorola Edge 50 Pro 10:46 status bar) */
 .rcs-os-statusbar {
   display: flex;
