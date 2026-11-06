@@ -29,7 +29,7 @@ export class RcsTemplateChooser {
       throw new Error('RcsTemplateChooser: valid target container element is required.');
     }
 
-    const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'tipos_lottery'];
+    const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'hospital_preventive_carousel'];
     this.state = {
       activePresetId: defaultPreset.id,
       activeSubTab: 'content', // 'content' | 'agent' | 'fallback' | 'json'

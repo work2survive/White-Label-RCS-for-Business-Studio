@@ -2019,6 +2019,92 @@ html, body {
   to { opacity: 1; }
 }
 
+.rcs-carousel-intro-bubble {
+  margin-bottom: 6px;
+  max-width: 94%;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.rcs-carousel-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+
+.rcs-carousel-step-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rcs-carousel-step-btn:hover {
+  background: var(--app-surface-2);
+}
+
+.rcs-carousel-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rcs-carousel-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text-sub);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rcs-carousel-dot:hover {
+  background: var(--verified-color);
+  color: #ffffff;
+  border-color: var(--verified-color);
+}
+
+.rcs-slot-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.rcs-slot-chip-btn {
+  padding: 9px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--verified-color);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.rcs-slot-chip-btn:hover {
+  background: var(--verified-color);
+  color: #ffffff;
+}
+
 @media (max-width: 960px) {
   .rcs-workbench {
     height: auto;
@@ -2030,3 +2116,4 @@ html, body {
     overflow: visible;
   }
 }
+

@@ -458,6 +458,93 @@ function createLogoSvgDataUri({ bg, text, fg = '#ffffff', sub = '' }) {
 }
 
 export const REAL_CAMPAIGN_PRESETS = {
+  hospital_preventive_carousel: {
+    id: 'hospital_preventive_carousel',
+    label: '🏥 Hospital Preventive Checkup — Doctor Choice (Carousel)',
+    templateId: 'carousel',
+    referenceScreenshot: './assets/screenshots/Screenshot_20260617-120327.png',
+    agent: {
+      name: 'St. Luke University Hospital',
+      verified: true,
+      tagline: 'Center for Preventive Medicine & Outpatient Diagnostics • Official RCS Booking',
+      color: '#0284C7',
+      avatarShape: 'circle',
+      logoUrl: createLogoSvgDataUri({ bg: '#0284C7', text: '✚', sub: 'ST. LUKE' }),
+      showAgentHeader: true,
+      showRbmChatNotice: true,
+      timestampLabel: 'Today • 09:15',
+      messageTime: '09:15',
+      showSpamBanner: false,
+      showScrollDownBtn: false
+    },
+    payload: {
+      templateId: 'carousel',
+      channel: 'rcs',
+      mediaHeight: 'TALL',
+      cardWidth: 'MEDIUM',
+      introText: '🩺 Your annual preventive checkup is due. Swipe to choose a specialist doctor and tap a slot to confirm your hospital visit:',
+      cards: [
+        {
+          id: 'doc-card-1',
+          mediaUrl: './assets/doctors/dr_kovacova.jpg',
+          mediaType: 'image',
+          mediaSizeKb: 633,
+          mediaDimensions: { width: 1200, height: 896 },
+          title: 'MUDr. Elena Kováčová • Cardiology 🫀',
+          description: 'Preventive heart check: 12-lead ECG, echocardiogram & vascular risk profile.\n📍 Pavilion B, Floor 2 • ★ 4.9 (310 reviews)',
+          suggestions: [
+            { id: 'doc1-s1', type: 'reply', text: 'Book Tue 08:30', value: 'BOOK_DR_KOVACOVA_TUE_0830' },
+            { id: 'doc1-s2', type: 'calendar', text: 'Choose Time Slot', value: 'MUDr. Elena Kováčová (Cardiology)' },
+            { id: 'doc1-s3', type: 'webview', text: 'Prep & Bio', value: 'https://stlukehospital.org/dr-kovacova' }
+          ]
+        },
+        {
+          id: 'doc-card-2',
+          mediaUrl: './assets/doctors/dr_novak.jpg',
+          mediaType: 'image',
+          mediaSizeKb: 633,
+          mediaDimensions: { width: 1200, height: 896 },
+          title: 'MUDr. Martin Novák • Internal Med 🩺',
+          description: 'Comprehensive metabolic panel, thyroid, liver/kidney & diabetes screening.\n📍 Pavilion A, Floor 1 • ★ 4.9 (284 reviews)',
+          suggestions: [
+            { id: 'doc2-s1', type: 'reply', text: 'Book Wed 07:45', value: 'BOOK_DR_NOVAK_WED_0745' },
+            { id: 'doc2-s2', type: 'calendar', text: 'Choose Time Slot', value: 'MUDr. Martin Novák (Internal Med)' },
+            { id: 'doc2-s3', type: 'location', text: 'Hospital Map Pin', value: '48.1486, 17.1077 (Pavilion A)' }
+          ]
+        },
+        {
+          id: 'doc-card-3',
+          mediaUrl: './assets/doctors/dr_horvathova.jpg',
+          mediaType: 'image',
+          mediaSizeKb: 634,
+          mediaDimensions: { width: 1200, height: 896 },
+          title: 'MUDr. Lucia Horváthová • General GP 🛡️',
+          description: 'Full annual preventive physical, spirometry, vision & immunization check.\n📍 Polyclinic Wing C • ★ 5.0 (412 reviews)',
+          suggestions: [
+            { id: 'doc3-s1', type: 'reply', text: 'Book Mon 09:30', value: 'BOOK_DR_HORVATHOVA_MON_0930' },
+            { id: 'doc3-s2', type: 'calendar', text: 'Choose Time Slot', value: 'MUDr. Lucia Horváthová (General GP)' },
+            { id: 'doc3-s3', type: 'dial', text: 'Call Nurse Desk', value: '+421 2 5950 1111' }
+          ]
+        },
+        {
+          id: 'doc-card-4',
+          mediaUrl: './assets/doctors/dr_kral.jpg',
+          mediaType: 'image',
+          mediaSizeKb: 613,
+          mediaDimensions: { width: 1200, height: 896 },
+          title: 'MUDr. Tomáš Král • Diagnostics 🔬',
+          description: 'Preventive abdominal ultrasound, carotid Doppler & early screening.\n📍 Diagnostic Center D • ★ 4.8 (198 reviews)',
+          suggestions: [
+            { id: 'doc4-s1', type: 'reply', text: 'Book Thu 08:00', value: 'BOOK_DR_KRAL_THU_0800' },
+            { id: 'doc4-s2', type: 'calendar', text: 'Choose Time Slot', value: 'MUDr. Tomáš Král (Diagnostics)' },
+            { id: 'doc4-s3', type: 'webview', text: 'Fasting Rules', value: 'https://stlukehospital.org/fasting-guide' }
+          ]
+        }
+      ],
+      smsFallbackText: 'St. Luke Hospital: Your annual preventive checkup is due. Book with Dr. Kovacova (Cardio), Dr. Novak (Internal), Dr. Horvathova (GP) or Dr. Kral: https://stluke.med/book'
+    }
+  },
+
   tipos_lottery: {
     id: 'tipos_lottery',
     label: 'TIPOS: Dni šťastia (Tall Rich Card)',

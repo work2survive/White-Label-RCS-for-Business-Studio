@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Instantiate Module 2 (Phone Preview) independently
   const previewModule = new RcsPhonePreview(previewHost, {
-    initialPreset: 'tipos_lottery',
+    initialPreset: 'hospital_preventive_carousel',
     onTelemetry: (event) => {
       if (telemetryLogEl) {
         const metaStr = Object.entries(event)
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Instantiate Module 1 (Template Chooser) independently & wire via standard callback / CustomEvent
   const chooserModule = new RcsTemplateChooser(chooserHost, {
-    initialPreset: 'tipos_lottery',
+    initialPreset: 'hospital_preventive_carousel',
     onChange: (detail) => {
       const activePreset = REAL_CAMPAIGN_PRESETS[detail.state.activePresetId];
       previewModule.update({

@@ -30,7 +30,7 @@ export class RcsPhonePreview {
       throw new Error('RcsPhonePreview: valid target container element is required.');
     }
 
-    const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'tipos_lottery'];
+    const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'hospital_preventive_carousel'];
 
     this.devices = structuredClone(DEVICE_PRESETS);
     this.skins = structuredClone(OS_APP_SKINS);
@@ -97,7 +97,7 @@ export class RcsPhonePreview {
     }
 
     if (action === 'push-user-msg') {
-      this.pushUserMessage('Chcem využiť túto ponuku 👍');
+      this.pushUserMessage('I would like to book my annual preventive checkup 🩺');
       return;
     }
 
@@ -126,16 +126,22 @@ export class RcsPhonePreview {
 
     setTimeout(() => {
       this.state.isTyping = false;
+      const isHospitalBooking = String(postback || text).toUpperCase().includes('BOOK') ||
+        this.state.agent.name.toLowerCase().includes('hospital');
+      const replyCopy = isHospitalBooking
+        ? `✅ Appointment Confirmed (#STL-8492)\n• Request: ${text}\n• Clinic: ${this.state.agent.name}\n• Prep: Please fast for 10h prior to blood draw (water is allowed). We sent a calendar pass to your phone.`
+        : `✓ Ďakujeme! Vaša požiadavka ("${text}") bola spracovaná cez ${this.state.agent.name}.`;
+
       this.state.conversationHistory.push({
         id: `msg-${Date.now()}-agent`,
         sender: 'agent',
-        text: `✓ Ďakujeme! Vaša požiadavka ("${text}") bola spracovaná cez ${this.state.agent.name}.`,
+        text: replyCopy,
         time: timeStr
       });
       this.renderViewportOnly();
       this.scrollToBottom();
       this.logTelemetry('AGENT_AUTO_REPLY', { replyTo: text });
-    }, 950);
+    }, 850);
   }
 
   playAnimatedConversation() {
@@ -752,7 +758,42 @@ export class RcsPhonePreview {
       `;
     }
 
-    // Simulated In-App Webview / Dialer / Location / Calendar Sheet
+    if (modal.actionType === 'calendar') {
+      const doctorName = modal.value || modal.label || 'Specialist Doctor';
+      const slots = [
+        'Tue, Nov 10 • 07:45 AM',
+        'Tue, Nov 10 • 08:30 AM',
+        'Wed, Nov 11 • 09:15 AM',
+        'Wed, Nov 11 • 10:30 AM',
+        'Thu, Nov 12 • 08:00 AM',
+        'Fri, Nov 13 • 11:00 AM'
+      ];
+      return `
+        <div class="rcs-phone-modal-backdrop" id="rcs-close-phone-modal">
+          <div class="rcs-action-sheet" onclick="event.stopPropagation()">
+            <div class="rcs-sheet-top">
+              <strong>📅 Select Preventive Checkup Slot</strong>
+              <button type="button" class="rcs-sheet-close" id="rcs-modal-close-btn">✕</button>
+            </div>
+            <div class="rcs-sheet-body">
+              <div class="rcs-webview-url-bar">🏥 ${this.escapeHtml(doctorName)}</div>
+              <p style="margin:6px 0;font-size:12px;color:var(--app-text-sub);">
+                Tap an available morning time slot to book your preventive screening and add it to your calendar:
+              </p>
+              <div class="rcs-slot-picker-grid">
+                ${slots.map((slot) => `
+                  <button type="button" class="rcs-slot-chip-btn" data-confirm-slot="${this.escapeHtml(`${doctorName} — ${slot}`)}">
+                    ${slot}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Simulated In-App Webview / Dialer / Location Sheet
     return `
       <div class="rcs-phone-modal-backdrop" id="rcs-close-phone-modal">
         <div class="rcs-action-sheet" onclick="event.stopPropagation()">
@@ -775,9 +816,9 @@ export class RcsPhonePreview {
 
   renderRealScreenshotComparison() {
     const screenshots = [
-      { id: 'tipos', label: 'TIPOS (Tall Card)', src: './assets/screenshots/Screenshot_20260617-120218.png' },
-      { id: 'telekom', label: 'Telekom (Carousel)', src: './assets/screenshots/Screenshot_20260617-120327.png' },
-      { id: 'doxxbet', label: 'DOXXbet (Multi-Card)', src: './assets/screenshots/Screenshot_20260617-120444.png' }
+      { id: 'telekom', label: 'Carousel Ref', src: './assets/screenshots/Screenshot_20260617-120327.png' },
+      { id: 'tipos', label: 'Tall Card Ref', src: './assets/screenshots/Screenshot_20260617-120218.png' },
+      { id: 'doxxbet', label: 'Multi-Card Ref', src: './assets/screenshots/Screenshot_20260617-120444.png' }
     ];
     const activeSrc = this.state.referenceScreenshot || screenshots[0].src;
 
@@ -909,7 +950,7 @@ export class RcsPhonePreview {
   }
 
   attachViewportEvents() {
-    // 1. Carousel Mouse & Touch Drag Simulation
+    // 1. Carousel Mouse & Touch Drag Simulation + Stepper Buttons
     const track = this.root.querySelector('#rcs-carousel-track');
     if (track) {
       let isDown = false;
@@ -947,7 +988,41 @@ export class RcsPhonePreview {
         if (Math.abs(walk) > 6) dragged = true;
         track.scrollLeft = scrollLeft - walk;
       });
+
+      const prevBtn = this.root.querySelector('#rcs-carousel-prev');
+      const nextBtn = this.root.querySelector('#rcs-carousel-next');
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          track.scrollBy({ left: -272, behavior: 'smooth' });
+          this.logTelemetry('CAROUSEL_STEP', { direction: 'prev' });
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          track.scrollBy({ left: 272, behavior: 'smooth' });
+          this.logTelemetry('CAROUSEL_STEP', { direction: 'next' });
+        });
+      }
+      this.root.querySelectorAll('[data-carousel-goto]').forEach((dot) => {
+        dot.addEventListener('click', () => {
+          const idx = Number(dot.dataset.carouselGoto);
+          const cards = track.querySelectorAll('.rcs-rich-card.is-carousel-item');
+          if (cards[idx]) {
+            cards[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            this.logTelemetry('CAROUSEL_GOTO_CARD', { cardIndex: idx + 1 });
+          }
+        });
+      });
     }
+
+    // Slot confirmation buttons inside the Calendar Modal
+    this.root.querySelectorAll('[data-confirm-slot]').forEach((slotBtn) => {
+      slotBtn.addEventListener('click', () => {
+        const slotInfo = slotBtn.dataset.confirmSlot;
+        this.state.activeModal = null;
+        this.pushUserMessage(`Book Preventive Check: ${slotInfo}`, 'BOOK_SLOT_CONFIRMED');
+      });
+    });
 
     // 2. Thumbnail Tap -> Fullscreen Media Lightbox
     this.root.querySelectorAll('[data-lightbox-url]').forEach((el) => {
