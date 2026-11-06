@@ -1288,6 +1288,20 @@ export class RcsPhonePreview {
       });
     }
 
+    // Mouse Wheel Zoom In / Out on the Phone Preview Stage
+    const stageWrap = this.root.querySelector('#rcs-stage-wrap');
+    if (stageWrap) {
+      stageWrap.addEventListener('wheel', (e) => {
+        if (!e.deltaY) return;
+        e.preventDefault();
+        const direction = e.deltaY < 0 ? 1 : -1;
+        const step = Math.min(0.1, Math.max(0.03, Math.abs(e.deltaY) * 0.0008));
+        this.state.zoomMode = 'manual';
+        this.state.zoom = Math.max(0.38, Math.min(1.8, Math.round((this.state.zoom + direction * step) * 1000) / 1000));
+        this.applyZoomDOM();
+      }, { passive: false });
+    }
+
     this.attachViewportEvents();
   }
 
