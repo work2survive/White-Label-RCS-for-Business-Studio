@@ -87,12 +87,10 @@ function initWorkbench() {
      * or RBM agent branding property is modified in Module 1.
      */
     onChange: (detail) => {
-      const activePreset = REAL_CAMPAIGN_PRESETS[detail.state.activePresetId];
       previewModule.update({
         payload: detail.payload,
         agent: detail.agent,
-        showCropGuides: detail.showCropGuides,
-        referenceScreenshot: activePreset?.referenceScreenshot
+        showCropGuides: detail.showCropGuides
       });
     },
     /**
