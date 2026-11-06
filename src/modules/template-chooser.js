@@ -2,7 +2,7 @@
  * @fileoverview Agnostic RCS Template Chooser & Content/Agent Configurator Module.
  * Can be mounted standalone in any DOM container via `new RcsTemplateChooser(el, opts)`
  * or used as a Web Component `<rcs-template-chooser>`.
- * Communicates via standard CustomEvents (`rcs:change`, `rcs:template-select`, `rcs:crop-overlay-toggle`, `rcs:simulate-flow`).
+ * Communicates via standard CustomEvents (`rcs:change`, `rcs:template-select`, `rcs:crop-overlay-toggle`, `rcs:flow-action`).
  */
 
 import {
@@ -32,10 +32,19 @@ export class RcsTemplateChooser {
     const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'hospital_preventive_carousel'];
     this.state = {
       activePresetId: defaultPreset.id,
-      activeSubTab: 'content', // 'content' | 'agent' | 'fallback' | 'json'
       activeCardIndex: 0,
       showCropGuides: true,
       agentDetected: true,
+      collapsedModules: {
+        templates: false,
+        cards: false,
+        media: false,
+        copy: false,
+        actions: false,
+        agent: false,
+        fallback: false,
+        json: true
+      },
       agent: structuredClone(options.agent || defaultPreset.agent),
       payload: structuredClone(options.payload || defaultPreset.payload)
     };
@@ -68,6 +77,42 @@ export class RcsTemplateChooser {
     this.render();
     this.attachEvents();
     this.emitChange('preset-load');
+  }
+
+  /**
+   * Public API: Toggle or set collapsed state of a specific module
+   */
+  toggleModule(moduleId, forceCollapse = null) {
+    if (!(moduleId in this.state.collapsedModules)) return;
+    const nextCollapsed = forceCollapse !== null
+      ? Boolean(forceCollapse)
+      : !this.state.collapsedModules[moduleId];
+    this.state.collapsedModules[moduleId] = nextCollapsed;
+
+    // Update DOM in place for instant, smooth animation without losing focus or scroll
+    const sectionEl = this.root.querySelector(`[data-module-card="${moduleId}"]`);
+    if (sectionEl) {
+      sectionEl.classList.toggle('is-collapsed', nextCollapsed);
+      const headBtn = sectionEl.querySelector('.rcs-accordion-head');
+      if (headBtn) {
+        headBtn.setAttribute('aria-expanded', String(!nextCollapsed));
+      }
+      return;
+    }
+
+    this.render();
+    this.attachEvents();
+  }
+
+  /**
+   * Public API: Expand or collapse all modules at once
+   */
+  setAllModulesCollapsed(collapsed) {
+    Object.keys(this.state.collapsedModules).forEach((k) => {
+      this.state.collapsedModules[k] = Boolean(collapsed);
+    });
+    this.render();
+    this.attachEvents();
   }
 
   /**
@@ -165,7 +210,7 @@ export class RcsTemplateChooser {
     const max = limitSpec.max;
     const pct = Math.min(100, Math.round((len / max) * 100));
     let statusClass = 'ok';
-    let statusText = `Optimal (≤ ${rec})`;
+    let statusText = `Optimal (≤ ${rec} chars)`;
     if (len > max) {
       statusClass = 'danger';
       statusText = `Exceeds max (${max})!`;
@@ -181,14 +226,52 @@ export class RcsTemplateChooser {
         </div>
         <div class="rcs-meter-meta">
           <span class="rcs-meter-badge is-${statusClass}">${statusText}</span>
-          <span class="rcs-meter-count"><strong>${len}</strong> / ${ rec } rec (${max} max)</span>
+          <span class="rcs-meter-count"><strong>${len}</strong> / ${rec} rec (${max} max)</span>
         </div>
       </div>
     `;
   }
 
+  /**
+   * Helper to wrap each section in a collapsible accordion module card
+   */
+  renderModuleCard({ id, icon, stepNum, title, summaryBadge, docUrl, docTooltip, headerRightHtml = '', bodyHtml }) {
+    const isCollapsed = Boolean(this.state.collapsedModules[id]);
+    return `
+      <section class="rcs-panel-section rcs-accordion-card ${isCollapsed ? 'is-collapsed' : ''}" data-module-card="${id}" id="rcs-mod-${id}">
+        <div class="rcs-accordion-head" data-toggle-module="${id}" role="button" tabindex="0" aria-expanded="${!isCollapsed}">
+          <div class="rcs-accordion-head-left">
+            <span class="rcs-mod-icon-box" aria-hidden="true">
+              ${getIcon(icon)}
+            </span>
+            <div class="rcs-mod-title-stack">
+              <div class="rcs-mod-title-row">
+                ${stepNum ? `<span class="rcs-mod-step">${stepNum}</span>` : ''}
+                <span class="rcs-section-title">${title}</span>
+                ${docUrl ? renderDocLink(docUrl, docTooltip || title) : ''}
+              </div>
+              ${summaryBadge ? `<span class="rcs-mod-summary-pill">${summaryBadge}</span>` : ''}
+            </div>
+          </div>
+          <div class="rcs-accordion-head-right">
+            ${headerRightHtml ? `<div class="rcs-accordion-actions" onclick="event.stopPropagation()">${headerRightHtml}</div>` : ''}
+            <span class="rcs-accordion-chevron" title="Click to expand or collapse section">
+              ${getIcon('chevron-down')}
+            </span>
+          </div>
+        </div>
+        <div class="rcs-accordion-body">
+          ${bodyHtml}
+        </div>
+      </section>
+    `;
+  }
+
   render() {
-    const { payload, agent, activeSubTab, activeCardIndex, showCropGuides, activePresetId, agentDetected } = this.state;
+    const prevBody = this.root.querySelector('.rcs-chooser-body');
+    const prevScrollTop = prevBody ? prevBody.scrollTop : 0;
+
+    const { payload, agent, activeCardIndex, showCropGuides, activePresetId, agentDetected, collapsedModules } = this.state;
     const currentTemplate = TEMPLATES.find((t) => t.id === payload.templateId) || TEMPLATES[0];
     const card = this.getCurrentCard();
     const isMulti = payload.templateId === 'carousel' || payload.templateId === 'multi_card_feed';
@@ -205,10 +288,11 @@ export class RcsTemplateChooser {
     );
 
     const smsAnalysis = analyzeSmsSegments(payload.smsFallbackText || card.description || '');
+    const allCollapsed = Object.values(collapsedModules).every(Boolean);
 
     this.root.innerHTML = `
       <div class="rcs-chooser-shell">
-        <!-- Compact Top Header: Preset Selector + Sub-navigation -->
+        <!-- Top Header: Module Title + Campaign Preset Selector -->
         <div class="rcs-chooser-topbar">
           <div class="rcs-module-title">
             <span class="rcs-module-badge">MODULE 1</span>
@@ -218,7 +302,7 @@ export class RcsTemplateChooser {
 
           <div class="rcs-preset-bar" title="Load authentic campaign presets from real screenshots">
             <label for="rcs-preset-select" class="rcs-sr-only">Preset</label>
-            <select id="rcs-preset-select" class="rcs-select-compact">
+            <select id="rcs-preset-select" class="rcs-select-compact rcs-preset-select-pill">
               ${Object.values(REAL_CAMPAIGN_PRESETS).map((p) => `
                 <option value="${p.id}" ${p.id === activePresetId ? 'selected' : ''}>★ Preset: ${p.label}</option>
               `).join('')}
@@ -226,82 +310,170 @@ export class RcsTemplateChooser {
           </div>
         </div>
 
-        <!-- 1. Pictogram Template Strip (Always visible for 1-click switching) -->
-        <div class="rcs-template-strip" role="listbox" aria-label="RCS Rich Card Templates">
-          ${TEMPLATES.map((tpl) => {
-            const active = tpl.id === payload.templateId;
-            return `
-              <button type="button"
-                class="rcs-tpl-btn ${active ? 'is-active' : ''}"
-                data-tpl-id="${tpl.id}"
-                role="option"
-                aria-selected="${active}"
-                title="${tpl.description}">
-                <div class="rcs-tpl-btn-top">
-                  ${getIcon(tpl.icon, 'rcs-tpl-ico')}
-                  ${renderDocLink(tpl.docUrl, `${tpl.name} — Official Spec`)}
-                </div>
-                <span class="rcs-tpl-name">${tpl.shortName}</span>
+        <!-- Sticky Quick-Jump Navigation & Expand/Collapse All Bar -->
+        <div class="rcs-Subnav-strip" role="navigation" aria-label="Quick section jump and accordion controls">
+          <div class="rcs-jump-pills">
+            <button type="button" class="rcs-jump-pill" data-jump-mod="templates" title="Jump to Template Format">
+              ${getIcon(currentTemplate.icon)} <span>Template</span>
+            </button>
+            ${isMulti ? `
+              <button type="button" class="rcs-jump-pill" data-jump-mod="cards" title="Jump to Carousel Cards (${payload.cards.length})">
+                ${getIcon('layers')} <span>Cards (${payload.cards.length})</span>
               </button>
-            `;
-          }).join('')}
+            ` : ''}
+            ${(!isTextOnly && !isSms) ? `
+              <button type="button" class="rcs-jump-pill" data-jump-mod="media" title="Jump to Media & Safe-Zone Crop">
+                ${getIcon('crop')} <span>Media & Crop</span>
+              </button>
+            ` : ''}
+            <button type="button" class="rcs-jump-pill" data-jump-mod="copy" title="Jump to Text & Copy">
+              ${getIcon('text')} <span>Text & Copy</span>
+            </button>
+            ${!isSms ? `
+              <button type="button" class="rcs-jump-pill" data-jump-mod="actions" title="Jump to Suggested Actions">
+                ${getIcon('reply')} <span>Actions (${(card.suggestions || []).length}/4)</span>
+              </button>
+            ` : ''}
+            <button type="button" class="rcs-jump-pill" data-jump-mod="agent" title="Jump to Agent Branding">
+              ${getIcon('verified')} <span>Agent Brand</span>
+              <span class="rcs-dot ${agentDetected ? 'is-detected' : 'is-fallback'}"></span>
+            </button>
+            <button type="button" class="rcs-jump-pill" data-jump-mod="fallback" title="Jump to SMS Fallback & Flow">
+              ${getIcon('sms')} <span>SMS & Flow</span>
+            </button>
+            <button type="button" class="rcs-jump-pill" data-jump-mod="json" title="Jump to RBM JSON Payload">
+              ${getIcon('code')} <span>JSON</span>
+            </button>
+          </div>
+
+          <div class="rcs-fold-controls">
+            <button type="button" class="rcs-fold-btn" id="rcs-toggle-all-modules" title="${allCollapsed ? 'Expand all sections' : 'Collapse all sections'}">
+              ${getIcon(allCollapsed ? 'expand-all' : 'collapse-all')}
+              <span>${allCollapsed ? 'Expand All' : 'Collapse All'}</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Secondary Mode Tabs (Content & Crop | Agent Brand | SMS Fallback & Flow | JSON Payload) -->
-        <div class="rcs-subtabs" role="tablist">
-          <button type="button" class="rcs-subtab ${activeSubTab === 'content' ? 'is-active' : ''}" data-subtab="content">
-            ${getIcon('crop')} <span>Card & Media Specs</span>
-          </button>
-          <button type="button" class="rcs-subtab ${activeSubTab === 'agent' ? 'is-active' : ''}" data-subtab="agent">
-            ${getIcon('verified')} <span>Agent Branding</span>
-            <span class="rcs-dot ${agentDetected ? 'is-detected' : 'is-fallback'}" title="${agentDetected ? 'Agent branding detected' : 'Using fallback generic brand'}"></span>
-          </button>
-          <button type="button" class="rcs-subtab ${activeSubTab === 'fallback' ? 'is-active' : ''}" data-subtab="fallback">
-            ${getIcon('sms')} <span>SMS Fallback & Flow</span>
-          </button>
-          <button type="button" class="rcs-subtab ${activeSubTab === 'json' ? 'is-active' : ''}" data-subtab="json">
-            ${getIcon('code')} <span>RBM JSON</span>
-          </button>
-        </div>
-
-        <!-- Tab Body (Scrollable internally within 720p layout) -->
+        <!-- Vertically Scrollable Accordion Stack -->
         <div class="rcs-chooser-body">
-          ${activeSubTab === 'content' ? this.renderContentTab({
+          ${this.renderTemplatesModule(currentTemplate, payload)}
+
+          ${isMulti ? this.renderCardsDeckModule(payload, card, activeCardIndex) : ''}
+
+          ${(!isTextOnly && !isSms) ? this.renderMediaCropModule({
             payload,
             card,
-            currentTemplate,
-            isMulti,
             isCarousel,
             isHorizontal,
-            isTextOnly,
-            isSms,
             cropInfo,
-            showCropGuides,
-            activeCardIndex
+            showCropGuides
           }) : ''}
 
-          ${activeSubTab === 'agent' ? this.renderAgentTab({ agent, agentDetected }) : ''}
+          ${this.renderTextCopyModule({ card, isTextOnly, isSms })}
 
-          ${activeSubTab === 'fallback' ? this.renderFallbackTab({ payload, card, smsAnalysis }) : ''}
+          ${!isSms ? this.renderActionsModule({ card }) : ''}
 
-          ${activeSubTab === 'json' ? this.renderJsonTab({ payload, agent }) : ''}
+          ${this.renderAgentModule({ agent, agentDetected })}
+
+          ${this.renderFallbackFlowModule({ payload, smsAnalysis })}
+
+          ${this.renderJsonModule({ payload, agent })}
         </div>
       </div>
     `;
+
+    const newBody = this.root.querySelector('.rcs-chooser-body');
+    if (newBody && prevScrollTop > 0) {
+      newBody.scrollTop = prevScrollTop;
+    }
   }
 
-  renderContentTab({
-    payload,
-    card,
-    isMulti,
-    isCarousel,
-    isHorizontal,
-    isTextOnly,
-    isSms,
-    cropInfo,
-    showCropGuides,
-    activeCardIndex
-  }) {
+  renderTemplatesModule(currentTemplate, payload) {
+    const bodyHtml = `
+      <div class="rcs-template-grid" role="listbox" aria-label="RCS Rich Card Templates">
+        ${TEMPLATES.map((tpl) => {
+          const active = tpl.id === payload.templateId;
+          return `
+            <button type="button"
+              class="rcs-tpl-card ${active ? 'is-active' : ''}"
+              data-tpl-id="${tpl.id}"
+              role="option"
+              aria-selected="${active}"
+              title="${this.escapeHtml(tpl.description)}">
+              <div class="rcs-tpl-card-head">
+                <span class="rcs-tpl-card-ico">${getIcon(tpl.icon, 'rcs-tpl-ico')}</span>
+                <div class="rcs-tpl-card-meta">
+                  <span class="rcs-tpl-name">${tpl.shortName}</span>
+                  <span class="rcs-tpl-channel-tag ${tpl.channel === 'sms' ? 'is-sms' : 'is-rcs'}">${tpl.channel.toUpperCase()}</span>
+                </div>
+                ${renderDocLink(tpl.docUrl, `${tpl.name} — Official Spec`)}
+              </div>
+              <p class="rcs-tpl-card-desc">${this.escapeHtml(tpl.description)}</p>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    return this.renderModuleCard({
+      id: 'templates',
+      icon: currentTemplate.icon,
+      stepNum: '01',
+      title: 'RCS Template & Format',
+      summaryBadge: `${currentTemplate.name} (${currentTemplate.channel.toUpperCase()})`,
+      docUrl: currentTemplate.docUrl,
+      docTooltip: `${currentTemplate.name} Official Specification`,
+      bodyHtml
+    });
+  }
+
+  renderCardsDeckModule(payload, card, activeCardIndex) {
+    const headerRightHtml = `
+      <div class="rcs-card-actions">
+        <button type="button" class="rcs-icon-btn" id="rcs-add-card-btn" title="Add Card (max 10 in Carousel)" ${payload.cards.length >= 10 ? 'disabled' : ''}>
+          ${getIcon('plus')} <span>Add Card</span>
+        </button>
+        ${payload.cards.length > 2 ? `
+          <button type="button" class="rcs-icon-btn is-danger" id="rcs-del-card-btn" title="Remove active card">
+            ${getIcon('trash')}
+          </button>
+        ` : ''}
+      </div>
+    `;
+
+    const bodyHtml = `
+      <div class="rcs-card-deck-grid">
+        ${payload.cards.map((c, idx) => {
+          const active = idx === activeCardIndex;
+          return `
+            <button type="button" class="rcs-deck-card-pill ${active ? 'is-active' : ''}" data-card-idx="${idx}">
+              <span class="rcs-deck-thumb" style="background-image: url('${c.mediaUrl || ''}')">
+                <span class="rcs-deck-index">#${idx + 1}</span>
+              </span>
+              <span class="rcs-deck-info">
+                <strong class="rcs-deck-title">${this.escapeHtml(c.title || `Card #${idx + 1}`)}</strong>
+                <small class="rcs-deck-sub">${(c.suggestions || []).length} action${(c.suggestions || []).length === 1 ? '' : 's'}</small>
+              </span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    return this.renderModuleCard({
+      id: 'cards',
+      icon: 'layers',
+      stepNum: '02',
+      title: `Carousel / Multi-Card Deck (${payload.cards.length}/10)`,
+      summaryBadge: `Editing Card #${activeCardIndex + 1}: ${(card.title || 'Card').slice(0, 26)}`,
+      docUrl: RCS_DOCS.carousels.url,
+      docTooltip: 'Carousel Rich Cards (2 to 10 cards)',
+      headerRightHtml,
+      bodyHtml
+    });
+  }
+
+  renderMediaCropModule({ payload, card, isCarousel, isHorizontal, cropInfo, showCropGuides }) {
     const sizeKb = card.mediaSizeKb || 320;
     const maxKb = card.mediaType === 'video'
       ? cropInfo.spec.maxVideoKb
@@ -310,355 +482,377 @@ export class RcsTemplateChooser {
         : cropInfo.spec.maxImageKb;
     const sizeOk = sizeKb <= maxKb;
 
-    return `
-      <!-- Multi-Card Switcher (when Carousel or Stacked Multi-Card is active) -->
-      ${isMulti ? `
-        <div class="rcs-card-switcher">
-          <div class="rcs-card-pills">
-            ${payload.cards.map((c, idx) => `
-              <button type="button" class="rcs-card-pill ${idx === activeCardIndex ? 'is-active' : ''}" data-card-idx="${idx}">
-                #${idx + 1} ${this.escapeHtml((c.title || 'Card').slice(0, 14))}
-              </button>
-            `).join('')}
-          </div>
-          <div class="rcs-card-actions">
-            <button type="button" class="rcs-icon-btn" id="rcs-add-card-btn" title="Add Card (max 10 in Carousel)" ${payload.cards.length >= 10 ? 'disabled' : ''}>
-              ${getIcon('plus')} <span>Card</span>
-            </button>
-            ${payload.cards.length > 2 ? `
-              <button type="button" class="rcs-icon-btn is-danger" id="rcs-del-card-btn" title="Remove active card">
-                ${getIcon('trash')}
-              </button>
-            ` : ''}
-          </div>
-        </div>
-      ` : ''}
+    const headerRightHtml = `
+      <label class="rcs-toggle-chip" title="Highlight cropped vs visible zones on the phone preview">
+        <input type="checkbox" id="rcs-crop-guide-toggle" ${showCropGuides ? 'checked' : ''}/>
+        <span>Crop Overlay on Phone</span>
+      </label>
+    `;
 
-      <!-- Geometry & Media Crop Section (Hidden in pure text/SMS mode) -->
-      ${(!isTextOnly && !isSms) ? `
-        <div class="rcs-panel-section">
-          <div class="rcs-section-head">
-            <span class="rcs-section-title">
-              ${getIcon('crop')} Media Geometry & Safe-Zone Crop
-              ${renderDocLink(RCS_DOCS.media.url, 'Official Media Sizes, Heights & Center-Crop Spec')}
-            </span>
-            <label class="rcs-toggle-pill" title="Highlight cropped vs visible zones on the preview">
-              <input type="checkbox" id="rcs-crop-guide-toggle" ${showCropGuides ? 'checked' : ''}/>
-              <span>Show Crop Overlay</span>
-            </label>
-          </div>
+    const summaryParts = [
+      !isHorizontal ? `${payload.mediaHeight} (${MEDIA_SPECS[payload.mediaHeight]?.dpHeight || 264}dp)` : `Thumb ${payload.thumbnailAlignment || 'LEFT'}`,
+      isCarousel ? `Width: ${payload.cardWidth}` : null,
+      `${cropInfo.croppedPercent}% crop`
+    ].filter(Boolean).join(' • ');
 
-          <div class="rcs-geometry-grid">
-            ${!isHorizontal ? `
-              <div class="rcs-field-group">
-                <label class="rcs-field-label">
-                  Media Height (dp) ${renderDocLink(RCS_DOCS.richCards.url, 'CardMedia.Height: SHORT (112dp), MEDIUM (168dp), TALL (264dp)')}
-                </label>
-                <div class="rcs-segmented">
-                  ${['SHORT', 'MEDIUM', 'TALL'].map((hKey) => `
-                    <button type="button" class="rcs-seg-btn ${payload.mediaHeight === hKey ? 'is-active' : ''}" data-media-height="${hKey}">
-                      <strong>${hKey}</strong>
-                      <small>${MEDIA_SPECS[hKey].dpHeight}dp</small>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            ` : `
-              <div class="rcs-field-group">
-                <label class="rcs-field-label">
-                  Thumbnail Side ${renderDocLink(RCS_DOCS.richCards.url, 'Horizontal Rich Card ThumbnailAlignment')}
-                </label>
-                <div class="rcs-segmented">
-                  ${['LEFT', 'RIGHT'].map((side) => `
-                    <button type="button" class="rcs-seg-btn ${payload.thumbnailAlignment === side ? 'is-active' : ''}" data-thumb-align="${side}">
-                      <strong>${side}</strong>
-                      <small>128dp</small>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            `}
-
-            ${isCarousel ? `
-              <div class="rcs-field-group">
-                <label class="rcs-field-label">
-                  Carousel Width ${renderDocLink(RCS_DOCS.carousels.url, 'CarouselCard.CardWidth: SMALL (120dp) or MEDIUM (200dp)')}
-                </label>
-                <div class="rcs-segmented">
-                  ${['SMALL', 'MEDIUM'].map((wKey) => `
-                    <button type="button" class="rcs-seg-btn ${payload.cardWidth === wKey ? 'is-active' : ''}" data-card-width="${wKey}">
-                      <strong>${wKey}</strong>
-                      <small>${CAROUSEL_WIDTH_SPECS[wKey].rawSpecDp}dp</small>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            ` : ''}
-          </div>
-
-          <!-- Interactive Crop & File Size Diagnostic Box -->
-          <div class="rcs-crop-diagnostic">
-            <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
-              <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
-                <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
-                  ${cropInfo.cropAxis === 'horizontal'
-                    ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
-                    : cropInfo.cropAxis === 'vertical'
-                      ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
-                      : 'width: 100%; height: 100%;'}
-                ">
-                  <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="rcs-crop-stats">
-              <div class="rcs-spec-pill">
-                <span class="rcs-spec-k">Rec. Size:</span>
-                <strong class="rcs-spec-v">${cropInfo.recText}</strong>
-              </div>
-              <div class="rcs-spec-pill">
-                <span class="rcs-spec-k">Current Asset:</span>
-                <strong class="rcs-spec-v ${sizeOk ? 'is-ok' : 'is-warn'}">
-                  ${cropInfo.srcW}×${cropInfo.srcH} px • ${sizeKb} KB (${(card.mediaType || 'image').toUpperCase()})
-                </strong>
-              </div>
-              <div class="rcs-spec-pill">
-                <span class="rcs-spec-k">Center-Crop:</span>
-                <strong class="rcs-spec-v ${cropInfo.croppedPercent > 20 ? 'is-warn' : 'is-ok'}">
-                  ${cropInfo.croppedPercent === 0
-                    ? 'Exact aspect match (0% cropped)'
-                    : `${cropInfo.croppedPercent}% cropped (${cropInfo.cropAxis === 'horizontal' ? 'left/right edges' : 'top/bottom edges'})`}
-                </strong>
-              </div>
-
-              <div class="rcs-upload-row">
-                <label class="rcs-upload-btn">
-                  ${getIcon('upload')} <span>Upload Image / GIF / MP4</span>
-                  <input type="file" id="rcs-media-file-input" accept="image/*,video/mp4,video/webm" hidden />
-                </label>
-                <button type="button" class="rcs-btn-ghost" id="rcs-sample-gif-btn" title="Load animated GIF/Video simulation">
-                  ${getIcon('play')} <span>Demo Animated Media</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Text Recommendations & Content Inputs -->
-      <div class="rcs-panel-section">
-        <div class="rcs-section-head">
-          <span class="rcs-section-title">
-            Text & Copy Recommendations
-            ${renderDocLink(RCS_DOCS.richCards.url, 'Title (max 200 chars) & Description (max 2,000 chars)')}
-          </span>
-        </div>
-
-        ${!isTextOnly && !isSms ? `
+    const bodyHtml = `
+      <div class="rcs-geometry-grid">
+        ${!isHorizontal ? `
           <div class="rcs-field-group">
-            <div class="rcs-label-row">
-              <label for="rcs-card-title" class="rcs-field-label">
-                Card Title ${renderDocLink(TEXT_LIMITS.title.docUrl, TEXT_LIMITS.title.hint)}
-              </label>
-              <span class="rcs-micro-hint">Rec ≤ 40 chars (max 200)</span>
+            <label class="rcs-field-label">
+              Media Height (dp) ${renderDocLink(RCS_DOCS.richCards.url, 'CardMedia.Height: SHORT (112dp), MEDIUM (168dp), TALL (264dp)')}
+            </label>
+            <div class="rcs-segmented">
+              ${['SHORT', 'MEDIUM', 'TALL'].map((hKey) => `
+                <button type="button" class="rcs-seg-btn ${payload.mediaHeight === hKey ? 'is-active' : ''}" data-media-height="${hKey}">
+                  <strong>${hKey}</strong>
+                  <small>${MEDIA_SPECS[hKey].dpHeight}dp</small>
+                </button>
+              `).join('')}
             </div>
-            <input type="text" id="rcs-card-title" class="rcs-input" value="${this.escapeHtml(card.title)}" maxlength="220" placeholder="Enter headline..." />
-            ${this.renderCharMeter(card.title, TEXT_LIMITS.title)}
+          </div>
+        ` : `
+          <div class="rcs-field-group">
+            <label class="rcs-field-label">
+              Thumbnail Side ${renderDocLink(RCS_DOCS.richCards.url, 'Horizontal Rich Card ThumbnailAlignment')}
+            </label>
+            <div class="rcs-segmented">
+              ${['LEFT', 'RIGHT'].map((side) => `
+                <button type="button" class="rcs-seg-btn ${payload.thumbnailAlignment === side ? 'is-active' : ''}" data-thumb-align="${side}">
+                  <strong>${side}</strong>
+                  <small>128dp side</small>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `}
+
+        ${isCarousel ? `
+          <div class="rcs-field-group">
+            <label class="rcs-field-label">
+              Carousel Card Width ${renderDocLink(RCS_DOCS.carousels.url, 'CarouselCard.CardWidth: SMALL (120dp) or MEDIUM (200dp)')}
+            </label>
+            <div class="rcs-segmented">
+              ${['SMALL', 'MEDIUM'].map((wKey) => `
+                <button type="button" class="rcs-seg-btn ${payload.cardWidth === wKey ? 'is-active' : ''}" data-card-width="${wKey}">
+                  <strong>${wKey}</strong>
+                  <small>${CAROUSEL_WIDTH_SPECS[wKey].rawSpecDp}dp</small>
+                </button>
+              `).join('')}
+            </div>
           </div>
         ` : ''}
-
-        <div class="rcs-field-group">
-          <div class="rcs-label-row">
-            <label for="rcs-card-desc" class="rcs-field-label">
-              ${isSms ? 'SMS Message Body' : isTextOnly ? 'RCS Message Text' : 'Card Description'}
-              ${renderDocLink(isSms ? TEXT_LIMITS.smsFallback.docUrl : TEXT_LIMITS.description.docUrl, isSms ? TEXT_LIMITS.smsFallback.hint : TEXT_LIMITS.description.hint)}
-            </label>
-            <span class="rcs-micro-hint">${isSms ? '160 GSM-7 / 70 Unicode' : 'Rec ≤ 140 chars before fold'}</span>
-          </div>
-          <textarea id="rcs-card-desc" class="rcs-textarea" rows="3" placeholder="Enter message description...">${this.escapeHtml(card.description)}</textarea>
-          ${this.renderCharMeter(card.description, isSms ? { recommended: 160, max: 320 } : TEXT_LIMITS.description)}
-        </div>
       </div>
 
-      <!-- Suggested Replies & Actions (Up to 4 per card) -->
-      ${!isSms ? `
-        <div class="rcs-panel-section">
-          <div class="rcs-section-head">
-            <span class="rcs-section-title">
-              Suggested Actions & Replies (${(card.suggestions || []).length}/4)
-              ${renderDocLink(RCS_DOCS.suggestedActions.url, 'Up to 4 Suggested Actions / Replies per card (max 25 chars each)')}
-            </span>
-            <button type="button" class="rcs-icon-btn" id="rcs-add-suggestion-btn" ${(card.suggestions || []).length >= 4 ? 'disabled' : ''}>
-              ${getIcon('plus')} <span>Add Action</span>
-            </button>
-          </div>
-
-          <div class="rcs-suggestions-list">
-            ${(card.suggestions || []).map((sug, sIdx) => {
-              const sugLen = Array.from(sug.text || '').length;
-              const isOver = sugLen > TEXT_LIMITS.suggestionText.max;
-              return `
-                <div class="rcs-sug-row" data-sug-idx="${sIdx}">
-                  <select class="rcs-sug-type" data-sug-idx="${sIdx}" title="Action Type">
-                    ${Object.values(ACTION_TYPES).map((a) => `
-                      <option value="${a.id}" ${sug.type === a.id ? 'selected' : ''}>${a.label}</option>
-                    `).join('')}
-                  </select>
-                  <div class="rcs-sug-input-wrap">
-                    <input type="text" class="rcs-input rcs-sug-text" data-sug-idx="${sIdx}" value="${this.escapeHtml(sug.text)}" placeholder="Button label (≤25 chars)" />
-                    <span class="rcs-sug-counter ${isOver ? 'is-danger' : sugLen > 20 ? 'is-warn' : ''}" title="Max 25 chars">${sugLen}/25</span>
-                  </div>
-                  <input type="text" class="rcs-input rcs-sug-val" data-sug-idx="${sIdx}" value="${this.escapeHtml(sug.value || '')}" placeholder="URL / Phone / Payload" />
-                  ${renderDocLink(ACTION_TYPES[sug.type]?.docUrl || RCS_DOCS.suggestedActions.url, `${ACTION_TYPES[sug.type]?.label || 'Action'} API Spec`)}
-                  <button type="button" class="rcs-sug-del" data-sug-idx="${sIdx}" title="Remove button">${getIcon('trash')}</button>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      ` : ''}
-    `;
-  }
-
-  renderAgentTab({ agent, agentDetected }) {
-    return `
-      <div class="rcs-panel-section">
-        <div class="rcs-section-head">
-          <span class="rcs-section-title">
-            ${getIcon('verified')} RBM Agent Identity & Brand Detection
-            ${renderDocLink(RCS_DOCS.agentInfo.url, 'Official Google RBM Agent Brand & Verification Spec')}
-          </span>
-          <div class="rcs-agent-detect-actions">
-            <button type="button" class="rcs-btn-ghost" id="rcs-simulate-missing-agent" title="Test fallback when agent brand info is not detected">
-              ${agentDetected ? 'Simulate Missing Agent' : 'Restore Detected Agent'}
-            </button>
-          </div>
-        </div>
-
-        <div class="rcs-agent-banner ${agentDetected ? 'is-detected' : 'is-fallback'}">
-          <span>${agentDetected
-            ? '✓ Brand metadata & colors synced from RBM Agent profile.'
-            : '⚠ Agent metadata not detected — using customizable generic preview fallback.'}</span>
-        </div>
-
-        <div class="rcs-agent-grid">
-          <div class="rcs-field-group">
-            <label class="rcs-field-label" for="rcs-agent-name">
-              Brand / Agent Display Name ${renderDocLink(RCS_DOCS.agentInfo.url, 'Agent Display Name shown in top bar & profile header')}
-            </label>
-            <input type="text" id="rcs-agent-name" class="rcs-input" value="${this.escapeHtml(agent.name)}" />
-          </div>
-
-          <div class="rcs-field-group">
-            <label class="rcs-field-label" for="rcs-agent-color">
-              Brand Color & Avatar Shape ${renderDocLink(RCS_DOCS.agentInfo.url, 'Agent hex color & logo styling')}
-            </label>
-            <div class="rcs-color-row">
-              <input type="color" id="rcs-agent-color" class="rcs-color-picker" value="${agent.color || '#D61F26'}" />
-              <input type="text" id="rcs-agent-color-hex" class="rcs-input rcs-hex-input" value="${this.escapeHtml(agent.color || '#D61F26')}" />
-              <select id="rcs-agent-shape" class="rcs-select-compact">
-                <option value="rounded" ${agent.avatarShape === 'rounded' ? 'selected' : ''}>Rounded Square</option>
-                <option value="circle" ${agent.avatarShape === 'circle' ? 'selected' : ''}>Circle Avatar</option>
-              </select>
+      <!-- Interactive Crop & File Size Diagnostic Box -->
+      <div class="rcs-crop-diagnostic">
+        <div class="rcs-crop-minimap" title="Visual representation of how RCS center-crops your media">
+          <div class="rcs-crop-stage" style="aspect-ratio: ${cropInfo.srcW} / ${cropInfo.srcH}; background-image: url('${card.mediaUrl}')">
+            <div class="rcs-crop-mask is-${cropInfo.cropAxis}" style="
+              ${cropInfo.cropAxis === 'horizontal'
+                ? `width: ${Math.round(cropInfo.visibleFraction * 100)}%; height: 100%;`
+                : cropInfo.cropAxis === 'vertical'
+                  ? `width: 100%; height: ${Math.round(cropInfo.visibleFraction * 100)}%;`
+                  : 'width: 100%; height: 100%;'}
+            ">
+              <span class="rcs-crop-safe-tag">SAFE VISIBLE ZONE</span>
             </div>
           </div>
         </div>
 
-        <div class="rcs-field-group">
-          <label class="rcs-field-label" for="rcs-agent-tagline">Agent Description / Tagline (shown in top profile header)</label>
-          <input type="text" id="rcs-agent-tagline" class="rcs-input" value="${this.escapeHtml(agent.tagline || '')}" />
-        </div>
+        <div class="rcs-crop-stats">
+          <div class="rcs-spec-pill">
+            <span class="rcs-spec-k">Recommended Size:</span>
+            <strong class="rcs-spec-v">${cropInfo.recText}</strong>
+          </div>
+          <div class="rcs-spec-pill">
+            <span class="rcs-spec-k">Current Asset:</span>
+            <strong class="rcs-spec-v ${sizeOk ? 'is-ok' : 'is-warn'}">
+              ${cropInfo.srcW}×${cropInfo.srcH} px • ${sizeKb} KB (${(card.mediaType || 'image').toUpperCase()})
+            </strong>
+          </div>
+          <div class="rcs-spec-pill">
+            <span class="rcs-spec-k">Center-Crop Impact:</span>
+            <strong class="rcs-spec-v ${cropInfo.croppedPercent > 20 ? 'is-warn' : 'is-ok'}">
+              ${cropInfo.croppedPercent === 0
+                ? 'Exact aspect match (0% cropped)'
+                : `${cropInfo.croppedPercent}% cropped (${cropInfo.cropAxis === 'horizontal' ? 'left/right edges' : 'top/bottom edges'})`}
+            </strong>
+          </div>
 
-        <div class="rcs-upload-row">
-          <label class="rcs-upload-btn">
-            ${getIcon('upload')} <span>Upload Brand Logo (Auto-Extracts Color)</span>
-            <input type="file" id="rcs-agent-logo-input" accept="image/*" hidden />
-          </label>
-          <label class="rcs-toggle-pill">
-            <input type="checkbox" id="rcs-agent-verified" ${agent.verified ? 'checked' : ''} />
-            <span>Verified Badge</span>
-          </label>
-        </div>
-
-        <div class="rcs-section-head" style="margin-top:8px">
-          <span class="rcs-section-title">Real Conversation Chrome Toggles (from Screenshots)</span>
-        </div>
-        <div class="rcs-chrome-toggles">
-          <label class="rcs-toggle-pill">
-            <input type="checkbox" id="rcs-show-agent-header" ${agent.showAgentHeader ? 'checked' : ''} />
-            <span>Large Profile Header (TIPOS style)</span>
-          </label>
-          <label class="rcs-toggle-pill">
-            <input type="checkbox" id="rcs-show-rbm-notice" ${agent.showRbmChatNotice !== false ? 'checked' : ''} />
-            <span>"This is an RCS for Business chat."</span>
-          </label>
-          <label class="rcs-toggle-pill">
-            <input type="checkbox" id="rcs-show-spam-banner" ${agent.showSpamBanner ? 'checked' : ''} />
-            <span>"block & report" Shield Banner (Telekom style)</span>
-          </label>
-          <label class="rcs-toggle-pill">
-            <input type="checkbox" id="rcs-show-scroll-btn" ${agent.showScrollDownBtn ? 'checked' : ''} />
-            <span>Floating Scroll-Down ↓ Button</span>
-          </label>
+          <div class="rcs-upload-row">
+            <label class="rcs-upload-btn">
+              ${getIcon('upload')} <span>Upload Image / GIF / MP4</span>
+              <input type="file" id="rcs-media-file-input" accept="image/*,video/mp4,video/webm" hidden />
+            </label>
+            <button type="button" class="rcs-btn-ghost" id="rcs-sample-gif-btn" title="Load animated GIF/Video simulation">
+              ${getIcon('play')} <span>Demo Animated Media</span>
+            </button>
+          </div>
         </div>
       </div>
     `;
+
+    return this.renderModuleCard({
+      id: 'media',
+      icon: 'crop',
+      stepNum: '03',
+      title: 'Media Geometry & Safe-Zone Crop',
+      summaryBadge: summaryParts,
+      docUrl: RCS_DOCS.media.url,
+      docTooltip: 'Official Media Sizes, Heights & Center-Crop Spec',
+      headerRightHtml,
+      bodyHtml
+    });
   }
 
-  renderFallbackTab({ payload, smsAnalysis }) {
-    return `
-      <div class="rcs-panel-section">
-        <div class="rcs-section-head">
-          <span class="rcs-section-title">
-            ${getIcon('sms')} SMS Fallback System & Segment Calculator
-            ${renderDocLink(RCS_DOCS.fallback.url, 'Official RCS-to-SMS Fallback & Revoke API Spec')}
-          </span>
-          <button type="button" class="rcs-btn-ghost" id="rcs-autogenerate-fallback">
-            Auto-Generate from Rich Card
-          </button>
+  renderTextCopyModule({ card, isTextOnly, isSms }) {
+    const titleLen = Array.from(card.title || '').length;
+    const descLen = Array.from(card.description || '').length;
+    const summaryBadge = (!isTextOnly && !isSms)
+      ? `Title: ${titleLen}/${TEXT_LIMITS.title.recommended} • Desc: ${descLen}/${TEXT_LIMITS.description.recommended} chars`
+      : `Message: ${descLen} chars`;
+
+    const bodyHtml = `
+      ${!isTextOnly && !isSms ? `
+        <div class="rcs-field-group">
+          <div class="rcs-label-row">
+            <label for="rcs-card-title" class="rcs-field-label">
+              Card Title ${renderDocLink(TEXT_LIMITS.title.docUrl, TEXT_LIMITS.title.hint)}
+            </label>
+            <span class="rcs-micro-hint">Recommended ≤ 40 chars (max 200)</span>
+          </div>
+          <input type="text" id="rcs-card-title" class="rcs-input" value="${this.escapeHtml(card.title)}" maxlength="220" placeholder="Enter headline..." />
+          ${this.renderCharMeter(card.title, TEXT_LIMITS.title)}
+        </div>
+      ` : ''}
+
+      <div class="rcs-field-group">
+        <div class="rcs-label-row">
+          <label for="rcs-card-desc" class="rcs-field-label">
+            ${isSms ? 'SMS Message Body' : isTextOnly ? 'RCS Message Text' : 'Card Description'}
+            ${renderDocLink(isSms ? TEXT_LIMITS.smsFallback.docUrl : TEXT_LIMITS.description.docUrl, isSms ? TEXT_LIMITS.smsFallback.hint : TEXT_LIMITS.description.hint)}
+          </label>
+          <span class="rcs-micro-hint">${isSms ? '160 GSM-7 / 70 Unicode' : 'Recommended ≤ 140 chars before fold'}</span>
+        </div>
+        <textarea id="rcs-card-desc" class="rcs-textarea" rows="4" placeholder="Enter message description...">${this.escapeHtml(card.description)}</textarea>
+        ${this.renderCharMeter(card.description, isSms ? { recommended: 160, max: 320 } : TEXT_LIMITS.description)}
+      </div>
+    `;
+
+    return this.renderModuleCard({
+      id: 'copy',
+      icon: 'text',
+      stepNum: '04',
+      title: 'Text & Copy Recommendations',
+      summaryBadge,
+      docUrl: RCS_DOCS.richCards.url,
+      docTooltip: 'Title (max 200 chars) & Description (max 2,000 chars)',
+      bodyHtml
+    });
+  }
+
+  renderActionsModule({ card }) {
+    const suggestions = card.suggestions || [];
+    const headerRightHtml = `
+      <button type="button" class="rcs-icon-btn" id="rcs-add-suggestion-btn" ${suggestions.length >= 4 ? 'disabled' : ''}>
+        ${getIcon('plus')} <span>Add Action</span>
+      </button>
+    `;
+
+    const bodyHtml = `
+      <div class="rcs-suggestions-list">
+        ${suggestions.length === 0 ? `
+          <div class="rcs-empty-hint">No suggested actions or replies on this card yet. Click <strong>+ Add Action</strong> to add up to 4 buttons.</div>
+        ` : suggestions.map((sug, sIdx) => {
+          const sugLen = Array.from(sug.text || '').length;
+          const isOver = sugLen > TEXT_LIMITS.suggestionText.max;
+          const actionSpec = ACTION_TYPES[sug.type] || ACTION_TYPES.url;
+          return `
+            <div class="rcs-sug-card" data-sug-idx="${sIdx}">
+              <div class="rcs-sug-card-top">
+                <span class="rcs-sug-badge">#${sIdx + 1}</span>
+                <select class="rcs-sug-type" data-sug-idx="${sIdx}" title="Action Type">
+                  ${Object.values(ACTION_TYPES).map((a) => `
+                    <option value="${a.id}" ${sug.type === a.id ? 'selected' : ''}>${a.label}</option>
+                  `).join('')}
+                </select>
+                <div class="rcs-sug-input-wrap">
+                  <input type="text" class="rcs-input rcs-sug-text" data-sug-idx="${sIdx}" value="${this.escapeHtml(sug.text)}" placeholder="Button label (≤25 chars)" />
+                  <span class="rcs-sug-counter ${isOver ? 'is-danger' : sugLen > 20 ? 'is-warn' : ''}" title="Max 25 chars">${sugLen}/25</span>
+                </div>
+                ${renderDocLink(actionSpec.docUrl || RCS_DOCS.suggestedActions.url, `${actionSpec.label} API Spec`)}
+                <button type="button" class="rcs-sug-del" data-sug-idx="${sIdx}" title="Remove button">${getIcon('trash')}</button>
+              </div>
+              <div class="rcs-sug-card-bottom">
+                <span class="rcs-sug-target-label">${sug.type === 'reply' ? 'Postback Payload:' : sug.type === 'dial' ? 'Phone Number:' : 'Target URL / Value:'}</span>
+                <input type="text" class="rcs-input rcs-sug-val" data-sug-idx="${sIdx}" value="${this.escapeHtml(sug.value || '')}" placeholder="https://... or postback_id" />
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    return this.renderModuleCard({
+      id: 'actions',
+      icon: 'reply',
+      stepNum: '05',
+      title: `Suggested Actions & Replies (${suggestions.length}/4)`,
+      summaryBadge: suggestions.length
+        ? suggestions.map((s) => s.text).join(' • ')
+        : 'No buttons configured',
+      docUrl: RCS_DOCS.suggestedActions.url,
+      docTooltip: 'Up to 4 Suggested Actions / Replies per card (max 25 chars each)',
+      headerRightHtml,
+      bodyHtml
+    });
+  }
+
+  renderAgentModule({ agent, agentDetected }) {
+    const headerRightHtml = `
+      <button type="button" class="rcs-btn-ghost" id="rcs-simulate-missing-agent" title="Test fallback when agent brand info is not detected">
+        ${agentDetected ? 'Simulate Missing Agent' : 'Restore Detected Agent'}
+      </button>
+    `;
+
+    const bodyHtml = `
+      <div class="rcs-agent-banner ${agentDetected ? 'is-detected' : 'is-fallback'}">
+        <span>${agentDetected
+          ? '✓ Brand metadata, logo & hex colors synced from RBM Agent profile.'
+          : '⚠ Agent metadata not detected — using customizable generic preview fallback.'}</span>
+      </div>
+
+      <div class="rcs-agent-grid">
+        <div class="rcs-field-group">
+          <label class="rcs-field-label" for="rcs-agent-name">
+            Brand / Agent Display Name ${renderDocLink(RCS_DOCS.agentInfo.url, 'Agent Display Name shown in top bar & profile header')}
+          </label>
+          <input type="text" id="rcs-agent-name" class="rcs-input" value="${this.escapeHtml(agent.name)}" />
         </div>
 
         <div class="rcs-field-group">
-          <label class="rcs-field-label" for="rcs-fallback-text">
-            Fallback SMS Text (sent automatically when recipient device is offline or lacks RCS)
+          <label class="rcs-field-label" for="rcs-agent-color">
+            Brand Color & Avatar Shape ${renderDocLink(RCS_DOCS.agentInfo.url, 'Agent hex color & logo styling')}
           </label>
-          <textarea id="rcs-fallback-text" class="rcs-textarea" rows="3">${this.escapeHtml(payload.smsFallbackText || '')}</textarea>
-          <div class="rcs-sms-stats">
-            <span class="rcs-sms-pill">Encoding: <strong>${smsAnalysis.encoding}</strong></span>
-            <span class="rcs-sms-pill">Length: <strong>${smsAnalysis.length} chars</strong></span>
-            <span class="rcs-sms-pill ${smsAnalysis.segments > 1 ? 'is-warn' : 'is-ok'}">
-              Segments: <strong>${smsAnalysis.segments} SMS</strong> (${smsAnalysis.remaining} chars left in segment)
-            </span>
+          <div class="rcs-color-row">
+            <input type="color" id="rcs-agent-color" class="rcs-color-picker" value="${agent.color || '#D61F26'}" />
+            <input type="text" id="rcs-agent-color-hex" class="rcs-input rcs-hex-input" value="${this.escapeHtml(agent.color || '#D61F26')}" />
+            <select id="rcs-agent-shape" class="rcs-select-compact">
+              <option value="rounded" ${agent.avatarShape === 'rounded' ? 'selected' : ''}>Rounded Square</option>
+              <option value="circle" ${agent.avatarShape === 'circle' ? 'selected' : ''}>Circle Avatar</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div class="rcs-panel-section">
-        <div class="rcs-section-head">
-          <span class="rcs-section-title">
-            ${getIcon('play')} Interactive Conversation & Animation Simulator
-          </span>
-        </div>
-        <p class="rcs-micro-copy">
-          Test how bubbles, typing indicators, user taps, and rich cards animate in real time inside the phone preview.
-        </p>
-        <div class="rcs-flow-buttons">
-          <button type="button" class="rcs-btn-primary" data-flow-action="play-full-conversation">
-            ${getIcon('play')} Simulate Animated Conversation Flow
-          </button>
-          <button type="button" class="rcs-btn-ghost" data-flow-action="push-user-msg">
-            + User Bubble ("Chcem ponuku")
-          </button>
-          <button type="button" class="rcs-btn-ghost" data-flow-action="toggle-sms-fallback-view">
-            ⇄ Toggle SMS Fallback View in Phone
-          </button>
-        </div>
+      <div class="rcs-field-group">
+        <label class="rcs-field-label" for="rcs-agent-tagline">Agent Description / Tagline (shown in top profile header)</label>
+        <input type="text" id="rcs-agent-tagline" class="rcs-input" value="${this.escapeHtml(agent.tagline || '')}" />
+      </div>
+
+      <div class="rcs-upload-row">
+        <label class="rcs-upload-btn">
+          ${getIcon('upload')} <span>Upload Brand Logo (Auto-Extracts Color)</span>
+          <input type="file" id="rcs-agent-logo-input" accept="image/*" hidden />
+        </label>
+        <label class="rcs-toggle-chip">
+          <input type="checkbox" id="rcs-agent-verified" ${agent.verified ? 'checked' : ''} />
+          <span>Verified Shield Badge</span>
+        </label>
+      </div>
+
+      <div class="rcs-subsection-divider">
+        <span class="rcs-subsection-label">Conversation Chrome Toggles (Real App Elements)</span>
+      </div>
+      <div class="rcs-chrome-toggles">
+        <label class="rcs-toggle-card">
+          <input type="checkbox" id="rcs-show-agent-header" ${agent.showAgentHeader ? 'checked' : ''} />
+          <span>Large Profile Header (Hero Banner & Logo)</span>
+        </label>
+        <label class="rcs-toggle-card">
+          <input type="checkbox" id="rcs-show-rbm-notice" ${agent.showRbmChatNotice !== false ? 'checked' : ''} />
+          <span>"This is an RCS for Business chat." Notice</span>
+        </label>
+        <label class="rcs-toggle-card">
+          <input type="checkbox" id="rcs-show-spam-banner" ${agent.showSpamBanner ? 'checked' : ''} />
+          <span>"block & report" Shield Banner</span>
+        </label>
+        <label class="rcs-toggle-card">
+          <input type="checkbox" id="rcs-show-scroll-btn" ${agent.showScrollDownBtn ? 'checked' : ''} />
+          <span>Floating Scroll-Down ↓ Button</span>
+        </label>
       </div>
     `;
+
+    return this.renderModuleCard({
+      id: 'agent',
+      icon: 'verified',
+      stepNum: '06',
+      title: 'RBM Agent Branding & Chrome',
+      summaryBadge: `${agent.name} (${agent.color || '#0284c7'}) ${agent.verified ? '• Verified ✓' : '• Unverified'}`,
+      docUrl: RCS_DOCS.agentInfo.url,
+      docTooltip: 'Official Google RBM Agent Brand & Verification Spec',
+      headerRightHtml,
+      bodyHtml
+    });
   }
 
-  renderJsonTab({ payload, agent }) {
+  renderFallbackFlowModule({ payload, smsAnalysis }) {
+    const headerRightHtml = `
+      <button type="button" class="rcs-btn-ghost" id="rcs-autogenerate-fallback">
+        Auto-Generate SMS
+      </button>
+    `;
+
+    const bodyHtml = `
+      <div class="rcs-field-group">
+        <label class="rcs-field-label" for="rcs-fallback-text">
+          Fallback SMS Text (sent automatically when recipient device is offline or lacks RCS)
+        </label>
+        <textarea id="rcs-fallback-text" class="rcs-textarea" rows="3">${this.escapeHtml(payload.smsFallbackText || '')}</textarea>
+        <div class="rcs-sms-stats">
+          <span class="rcs-sms-pill">Encoding: <strong>${smsAnalysis.encoding}</strong></span>
+          <span class="rcs-sms-pill">Length: <strong>${smsAnalysis.length} chars</strong></span>
+          <span class="rcs-sms-pill ${smsAnalysis.segments > 1 ? 'is-warn' : 'is-ok'}">
+            Segments: <strong>${smsAnalysis.segments} SMS</strong> (${smsAnalysis.remaining} chars left in segment)
+          </span>
+        </div>
+      </div>
+
+      <div class="rcs-subsection-divider">
+        <span class="rcs-subsection-label">Interactive Conversation & Animation Simulator</span>
+      </div>
+      <p class="rcs-micro-copy">
+        Test how bubbles, typing indicators, user taps, and rich cards animate in real time inside the phone preview.
+      </p>
+      <div class="rcs-flow-buttons">
+        <button type="button" class="rcs-btn-primary" data-flow-action="play-full-conversation">
+          ${getIcon('play')} Simulate Animated Conversation Flow
+        </button>
+        <button type="button" class="rcs-btn-ghost" data-flow-action="push-user-msg">
+          + User Bubble ("Chcem ponuku")
+        </button>
+        <button type="button" class="rcs-btn-ghost" data-flow-action="toggle-sms-fallback-view">
+          ⇄ Toggle SMS Fallback View in Phone
+        </button>
+      </div>
+    `;
+
+    return this.renderModuleCard({
+      id: 'fallback',
+      icon: 'sms',
+      stepNum: '07',
+      title: 'SMS Fallback & Flow Simulator',
+      summaryBadge: `${smsAnalysis.segments} SMS (${smsAnalysis.encoding}, ${smsAnalysis.length} chars)`,
+      docUrl: RCS_DOCS.fallback.url,
+      docTooltip: 'Official RCS-to-SMS Fallback & Revoke API Spec',
+      headerRightHtml,
+      bodyHtml
+    });
+  }
+
+  renderJsonModule({ payload, agent }) {
     const card = this.getCurrentCard();
     const rbmPayload = {
       contentMessage: payload.templateId === 'carousel'
@@ -671,7 +865,7 @@ export class RcsTemplateChooser {
                   description: c.description,
                   media: {
                     height: payload.mediaHeight || 'TALL',
-                    contentInfo: { fileUrl: c.mediaUrl.slice(0, 64) + '...', forceRefresh: false }
+                    contentInfo: { fileUrl: (c.mediaUrl || '').slice(0, 48) + '...', forceRefresh: false }
                   },
                   suggestions: (c.suggestions || []).map((s) => ({
                     [s.type === 'reply' ? 'reply' : 'action']: {
@@ -695,7 +889,7 @@ export class RcsTemplateChooser {
                   description: card.description,
                   media: {
                     height: payload.mediaHeight || 'TALL',
-                    contentInfo: { fileUrl: card.mediaUrl.slice(0, 64) + '...', forceRefresh: false }
+                    contentInfo: { fileUrl: (card.mediaUrl || '').slice(0, 48) + '...', forceRefresh: false }
                   },
                   suggestions: (card.suggestions || []).map((s) => ({
                     [s.type === 'reply' ? 'reply' : 'action']: {
@@ -715,18 +909,27 @@ export class RcsTemplateChooser {
       fallbackSms: payload.smsFallbackText
     };
 
-    return `
-      <div class="rcs-panel-section">
-        <div class="rcs-section-head">
-          <span class="rcs-section-title">
-            ${getIcon('code')} Google RBM API Payload (v1/phones.agentMessages)
-            ${renderDocLink(RCS_DOCS.restReference.url, 'Official AgentContentMessage REST Reference')}
-          </span>
-          <button type="button" class="rcs-btn-ghost" id="rcs-copy-json-btn">Copy JSON</button>
-        </div>
-        <pre class="rcs-json-pre"><code>${this.escapeHtml(JSON.stringify(rbmPayload, null, 2))}</code></pre>
-      </div>
+    const headerRightHtml = `
+      <button type="button" class="rcs-btn-ghost" id="rcs-copy-json-btn">
+        ${getIcon('copy')} <span>Copy JSON</span>
+      </button>
     `;
+
+    const bodyHtml = `
+      <pre class="rcs-json-pre"><code>${this.escapeHtml(JSON.stringify(rbmPayload, null, 2))}</code></pre>
+    `;
+
+    return this.renderModuleCard({
+      id: 'json',
+      icon: 'code',
+      stepNum: '08',
+      title: 'Google RBM API Payload (JSON)',
+      summaryBadge: 'v1/phones.agentMessages',
+      docUrl: RCS_DOCS.restReference.url,
+      docTooltip: 'Official AgentContentMessage REST Reference',
+      headerRightHtml,
+      bodyHtml
+    });
   }
 
   attachEvents() {
@@ -736,18 +939,48 @@ export class RcsTemplateChooser {
       presetSelect.addEventListener('change', (e) => this.loadPreset(e.target.value));
     }
 
-    // Template strip buttons
-    this.root.querySelectorAll('[data-tpl-id]').forEach((btn) => {
-      btn.addEventListener('click', () => this.selectTemplate(btn.dataset.tplId));
+    // Accordion section headers (expand/collapse individual modules)
+    this.root.querySelectorAll('[data-toggle-module]').forEach((head) => {
+      head.addEventListener('click', (e) => {
+        if (e.target.closest('a, button, input, select, label')) return;
+        this.toggleModule(head.dataset.toggleModule);
+      });
+      head.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.toggleModule(head.dataset.toggleModule);
+        }
+      });
     });
 
-    // Subtabs
-    this.root.querySelectorAll('[data-subtab]').forEach((btn) => {
+    // Quick-jump pills: auto-expand target module and scroll smoothly to it
+    this.root.querySelectorAll('[data-jump-mod]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.state.activeSubTab = btn.dataset.subtab;
-        this.render();
-        this.attachEvents();
+        const modId = btn.dataset.jumpMod;
+        this.toggleModule(modId, false); // ensure expanded
+        const targetEl = this.root.querySelector(`#rcs-mod-${modId}`);
+        const scrollBody = this.root.querySelector('.rcs-chooser-body');
+        if (targetEl && scrollBody) {
+          const topOffset = targetEl.offsetTop - scrollBody.offsetTop - 8;
+          scrollBody.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
+          targetEl.classList.add('is-highlighted');
+          setTimeout(() => targetEl.classList.remove('is-highlighted'), 900);
+        }
       });
+    });
+
+    // Expand All / Collapse All button
+    const toggleAllBtn = this.root.querySelector('#rcs-toggle-all-modules');
+    if (toggleAllBtn) {
+      toggleAllBtn.addEventListener('click', () => {
+        const allCollapsed = Object.values(this.state.collapsedModules).every(Boolean);
+        this.setAllModulesCollapsed(!allCollapsed);
+      });
+    }
+
+    // Template cards
+    this.root.querySelectorAll('[data-tpl-id]').forEach((btn) => {
+      btn.addEventListener('click', () => this.selectTemplate(btn.dataset.tplId));
     });
 
     // Multi-card switcher pills
@@ -768,6 +1001,7 @@ export class RcsTemplateChooser {
         clone.title = `Offer Card #${this.state.payload.cards.length + 1}`;
         this.state.payload.cards.push(clone);
         this.state.activeCardIndex = this.state.payload.cards.length - 1;
+        this.state.collapsedModules.cards = false;
         this.render();
         this.attachEvents();
         this.emitChange('card-add');
@@ -928,6 +1162,7 @@ export class RcsTemplateChooser {
           text: 'Open Offer',
           value: 'https://example.com'
         });
+        this.state.collapsedModules.actions = false;
         this.render();
         this.attachEvents();
         this.emitChange('suggestion-add');
@@ -986,14 +1221,14 @@ export class RcsTemplateChooser {
       });
     });
 
-    // Agent tab events
+    // Agent section events
     const simMissingBtn = this.root.querySelector('#rcs-simulate-missing-agent');
     if (simMissingBtn) {
       simMissingBtn.addEventListener('click', () => {
         if (this.state.agentDetected) {
           this.setAgentFromExternal(null);
         } else {
-          const preset = REAL_CAMPAIGN_PRESETS[this.state.activePresetId] || REAL_CAMPAIGN_PRESETS.tipos_lottery;
+          const preset = REAL_CAMPAIGN_PRESETS[this.state.activePresetId] || REAL_CAMPAIGN_PRESETS.hospital_preventive_carousel;
           this.setAgentFromExternal(structuredClone(preset.agent));
         }
       });
@@ -1074,17 +1309,21 @@ export class RcsTemplateChooser {
     bindCheckbox('#rcs-show-spam-banner', 'showSpamBanner');
     bindCheckbox('#rcs-show-scroll-btn', 'showScrollDownBtn');
 
-    // Fallback tab events
+    // Fallback section events
     const fallbackInput = this.root.querySelector('#rcs-fallback-text');
     if (fallbackInput) {
       fallbackInput.addEventListener('input', (e) => {
         this.state.payload.smsFallbackText = e.target.value;
-        this.render();
-        this.attachEvents();
-        const textarea = this.root.querySelector('#rcs-fallback-text');
-        if (textarea) {
-          textarea.focus();
-          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        const smsAnalysis = analyzeSmsSegments(e.target.value);
+        const statsEl = fallbackInput.parentElement?.querySelector('.rcs-sms-stats');
+        if (statsEl) {
+          statsEl.innerHTML = `
+            <span class="rcs-sms-pill">Encoding: <strong>${smsAnalysis.encoding}</strong></span>
+            <span class="rcs-sms-pill">Length: <strong>${smsAnalysis.length} chars</strong></span>
+            <span class="rcs-sms-pill ${smsAnalysis.segments > 1 ? 'is-warn' : 'is-ok'}">
+              Segments: <strong>${smsAnalysis.segments} SMS</strong> (${smsAnalysis.remaining} chars left in segment)
+            </span>
+          `;
         }
         this.emitChange('fallback-text');
       });
@@ -1096,6 +1335,7 @@ export class RcsTemplateChooser {
         const card = this.getCurrentCard();
         const firstUrl = (card.suggestions || []).find((s) => s.type === 'url' || s.type === 'webview')?.value || 'https://r.bzn.sk/m';
         this.state.payload.smsFallbackText = `${this.state.agent.name}: ${card.title} - ${(card.description || '').replace(/\s+/g, ' ').slice(0, 90)} ${firstUrl}`;
+        this.state.collapsedModules.fallback = false;
         this.render();
         this.attachEvents();
         this.emitChange('fallback-autogen');
@@ -1114,15 +1354,18 @@ export class RcsTemplateChooser {
           this.onTriggerFlow(action, this.getState());
         }
       });
-    });
+    }
+    );
 
     const copyJsonBtn = this.root.querySelector('#rcs-copy-json-btn');
     if (copyJsonBtn) {
       copyJsonBtn.addEventListener('click', () => {
         const code = this.root.querySelector('.rcs-json-pre')?.textContent || '';
         navigator.clipboard?.writeText(code);
-        copyJsonBtn.textContent = '✓ Copied!';
-        setTimeout(() => { copyJsonBtn.textContent = 'Copy JSON'; }, 1500);
+        copyJsonBtn.innerHTML = `<span>✓ Copied!</span>`;
+        setTimeout(() => {
+          copyJsonBtn.innerHTML = `${getIcon('copy')} <span>Copy JSON</span>`;
+        }, 1500);
       });
     }
   }
@@ -1191,7 +1434,7 @@ if (typeof window !== 'undefined' && !customElements.get('rcs-template-chooser')
   class RcsTemplateChooserElement extends HTMLElement {
     connectedCallback() {
       if (!this.instance) {
-        const preset = this.getAttribute('preset') || 'tipos_lottery';
+        const preset = this.getAttribute('preset') || 'hospital_preventive_carousel';
         this.instance = new RcsTemplateChooser(this, { initialPreset: preset });
       }
     }

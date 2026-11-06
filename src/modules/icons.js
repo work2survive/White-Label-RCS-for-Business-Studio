@@ -29,7 +29,14 @@ export const ICONS = {
   'shield-g': `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5c1.21 0 2.23.44 3.01 1.18l-1.29 1.24c-.35-.34-.96-.67-1.72-.67-1.47 0-2.67 1.22-2.67 2.75s1.2 2.75 2.67 2.75c1.38 0 2.18-.79 2.36-1.75H12v-1.65h4.18c.05.28.08.56.08.92 0 2.61-1.75 4.23-4.26 4.23z"/></svg>`,
   'code': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6.5 6.5-3.5 3.5 3.5 3.5M13.5 6.5 17 10l-3.5 3.5M11.2 4.5l-2.4 11"/></svg>`,
   'analytics': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16V10M8 16V6M12 16v-4M16 16V4" stroke-linecap="round"/></svg>`,
-  'device': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="2" width="10" height="16" rx="2"/><line x1="8.5" y1="15.5" x2="11.5" y2="15.5"/></svg>`
+  'device': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="2" width="10" height="16" rx="2"/><line x1="8.5" y1="15.5" x2="11.5" y2="15.5"/></svg>`,
+  'chevron-down': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5.5 7.8 4.5 4.5 4.5-4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'chevron-right': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7.8 5.5 4.5 4.5-4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'expand-all': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6.5 8 3.5-3.5L13.5 8M6.5 12l3.5 3.5 3.5-3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'collapse-all': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6.5 4.5 3.5 3.5 3.5-3.5M6.5 15.5 10 12l3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'text': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M10 5v11M7 16h6" stroke-linecap="round"/></svg>`,
+  'layers': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 2.5 7 10 11l7.5-4L10 3Z"/><path d="m2.5 10.5 7.5 4 7.5-4M2.5 14l7.5 4 7.5-4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'copy': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="7" width="9" height="9" rx="1.8"/><path d="M4 13V5a1 1 0 0 1 1-1h8"/></svg>`
 };
 
 /**
