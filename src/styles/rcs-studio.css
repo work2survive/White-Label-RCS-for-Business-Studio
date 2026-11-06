@@ -2105,6 +2105,98 @@ html, body {
   color: #ffffff;
 }
 
+/* ==========================================================================
+   Custom Hand Cursor, Tapping Hand Icon, & Blue Touch-Area Overlay
+   ========================================================================== */
+.rcs-touch-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.rcs-touch-overlay.is-visible {
+  opacity: 1;
+}
+
+/* Blue Circular Overlay in the Screen Area Being Touched */
+.rcs-touch-blue-area {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.46) 0%, rgba(2, 132, 199, 0.22) 70%, rgba(2, 132, 199, 0) 100%);
+  border: 2px solid rgba(56, 189, 248, 0.92);
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.55);
+  transform: scale(0.35);
+  opacity: 0;
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.rcs-touch-overlay.is-tapping .rcs-touch-blue-area {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Expanding Blue Ripple on Tap */
+.rcs-touch-ripple {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  margin-left: -27px;
+  margin-top: -27px;
+  border-radius: 50%;
+  background: rgba(14, 165, 233, 0.36);
+  border: 2px solid rgba(56, 189, 248, 0.9);
+  pointer-events: none;
+  animation: rcsTouchRipple 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Hand Cursor Following the Pointer (Index Fingertip Aligned at x,y) */
+.rcs-touch-cursor {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  margin-left: -14px;
+  margin-top: -4px;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.42));
+  transition: transform 0.09s ease;
+}
+
+.rcs-hand-svg.is-tap-hand {
+  display: none;
+}
+
+.rcs-touch-overlay.is-tapping .rcs-hand-svg.is-hover-hand {
+  display: none;
+}
+
+.rcs-touch-overlay.is-tapping .rcs-hand-svg.is-tap-hand {
+  display: block;
+}
+
+.rcs-touch-overlay.is-tapping .rcs-touch-cursor {
+  transform: translateY(2px) scale(0.92) rotate(-8deg);
+}
+
+@keyframes rcsTouchRipple {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
 @media (max-width: 960px) {
   .rcs-workbench {
     height: auto;
@@ -2116,4 +2208,5 @@ html, body {
     overflow: visible;
   }
 }
+
 

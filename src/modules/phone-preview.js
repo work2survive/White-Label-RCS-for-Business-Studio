@@ -413,6 +413,22 @@ export class RcsPhonePreview {
 
       <!-- 6. In-Phone Interactive Overlay Modals (Media Lightbox / Webview / Action Sheet / Custom Preset) -->
       ${this.state.activeModal ? this.renderActivePhoneModal() : ''}
+
+      <!-- 7. Custom Hand Cursor & Blue Touch-Area Overlay -->
+      <div class="rcs-touch-overlay ${this.touchState.visible ? 'is-visible' : ''} ${this.touchState.tapping ? 'is-tapping' : ''}" id="rcs-touch-overlay" aria-hidden="true">
+        <div class="rcs-touch-blue-area" id="rcs-touch-blue-area" style="left: ${this.touchState.x}px; top: ${this.touchState.y}px;"></div>
+        <div class="rcs-touch-cursor" id="rcs-touch-cursor" style="left: ${this.touchState.x}px; top: ${this.touchState.y}px;">
+          <!-- Hover state: Open Pointing Hand -->
+          <svg class="rcs-hand-svg is-hover-hand" viewBox="0 0 32 32" width="30" height="30">
+            <path d="M12.5 3.8a2.3 2.3 0 0 1 4.6 0v8.4h1.1a2.2 2.2 0 0 1 2.2 1.8l.3-.1a2.1 2.1 0 0 1 2.7 1.6l.3-.1a2.1 2.1 0 0 1 2.5 2v5.3c0 4.4-3.1 7.4-7.5 7.4h-4.1c-3.2 0-5.5-1.7-7-4.5l-3.1-5.8a2.1 2.1 0 0 1 3.5-2.2l2.5 2.8V3.8z" fill="#ffffff" stroke="#0f172a" stroke-width="1.9" stroke-linejoin="round"/>
+          </svg>
+          <!-- Tapping / Pressing state: Active Pressed Hand Icon -->
+          <svg class="rcs-hand-svg is-tap-hand" viewBox="0 0 32 32" width="30" height="30">
+            <circle cx="14.8" cy="5.5" r="5" fill="rgba(14, 165, 233, 0.45)" stroke="#0284c7" stroke-width="1.6"/>
+            <path d="M12.5 7.2a2.3 2.3 0 0 1 4.6 0v5.8h1.1a2.2 2.2 0 0 1 2.2 1.7l.3-.1a2.1 2.1 0 0 1 2.7 1.5l.3-.1a2.1 2.1 0 0 1 2.5 1.9v4.9c0 4.1-3.1 6.9-7.5 6.9h-4.1c-3.2 0-5.5-1.6-7-4.1l-2.8-5a2.1 2.1 0 0 1 3.5-2.1l2.2 2.2V7.2z" fill="#bae6fd" stroke="#0284c7" stroke-width="2.1" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
     `;
   }
 
@@ -498,6 +514,11 @@ export class RcsPhonePreview {
       const widthSpec = CAROUSEL_WIDTH_SPECS[payload.cardWidth] || CAROUSEL_WIDTH_SPECS.MEDIUM;
       const mediaSpec = MEDIA_SPECS[payload.mediaHeight] || MEDIA_SPECS.TALL;
       return `
+        ${payload.introText ? `
+          <div class="rcs-plain-rcs-bubble rcs-carousel-intro-bubble">
+            <div class="rcs-plain-desc">${this.formatRichText(payload.introText)}</div>
+          </div>
+        ` : ''}
         <div class="rcs-carousel-track" id="rcs-carousel-track" style="--carousel-card-w: ${widthSpec.dpWidth}px;">
           ${cards.map((c, idx) => this.renderSingleRichCard(c, {
             idx,
@@ -940,7 +961,7 @@ export class RcsPhonePreview {
     }
     if (zoomReset) {
       zoomReset.addEventListener('click', () => {
-        this.state.zoom = 0.76;
+        this.state.zoom = 0.68;
         this.render();
         this.attachEvents();
       });
@@ -950,7 +971,103 @@ export class RcsPhonePreview {
   }
 
   attachViewportEvents() {
-    // 1. Carousel Mouse & Touch Drag Simulation + Stepper Buttons
+    const host = this.root.querySelector('#rcs-phone-viewport-host');
+    const overlay = this.root.querySelector('#rcs-touch-overlay');
+    const cursorEl = this.root.querySelector('#rcs-touch-cursor');
+    const blueAreaEl = this.root.querySelector('#rcs-touch-blue-area');
+    const chatScroll = this.root.querySelector('#rcs-chat-scroll');
+
+    // 0. Custom Hand Cursor & Blue Touch-Area Overlay on the Phone Screen
+    if (host && overlay && cursorEl && blueAreaEl) {
+      const updateTouchCoords = (e) => {
+        const rect = host.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const scaleX = host.offsetWidth / rect.width;
+        const scaleY = host.offsetHeight / rect.height;
+        const x = Math.round((e.clientX - rect.left) * scaleX);
+        const y = Math.round((e.clientY - rect.top) * scaleY);
+        this.touchState.x = x;
+        this.touchState.y = y;
+        cursorEl.style.left = `${x}px`;
+        cursorEl.style.top = `${y}px`;
+        blueAreaEl.style.left = `${x}px`;
+        blueAreaEl.style.top = `${y}px`;
+      };
+
+      host.onpointerenter = (e) => {
+        this.touchState.visible = true;
+        overlay.classList.add('is-visible');
+        updateTouchCoords(e);
+      };
+
+      host.onpointermove = (e) => {
+        this.touchState.visible = true;
+        overlay.classList.add('is-visible');
+        updateTouchCoords(e);
+      };
+
+      host.onpointerdown = (e) => {
+        this.touchState.visible = true;
+        this.touchState.tapping = true;
+        this.touchState.wasDragged = false;
+        updateTouchCoords(e);
+        overlay.classList.add('is-visible', 'is-tapping');
+
+        // Spawn a transient blue touch ripple at the tapped screen area
+        const ripple = document.createElement('span');
+        ripple.className = 'rcs-touch-ripple';
+        ripple.style.left = `${this.touchState.x}px`;
+        ripple.style.top = `${this.touchState.y}px`;
+        overlay.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 420);
+      };
+
+      const endTap = () => {
+        setTimeout(() => {
+          this.touchState.tapping = false;
+          overlay.classList.remove('is-tapping');
+        }, 120);
+      };
+
+      host.onpointerup = endTap;
+      host.onpointercancel = endTap;
+
+      host.onpointerleave = () => {
+        this.touchState.visible = false;
+        this.touchState.tapping = false;
+        overlay.classList.remove('is-visible', 'is-tapping');
+      };
+    }
+
+    // 0b. Vertical Touch-Drag Scrolling on Chat Thread (No Scrollbars)
+    if (chatScroll) {
+      let vDown = false;
+      let startY = 0;
+      let startScrollTop = 0;
+
+      chatScroll.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('input, textarea, select')) return;
+        vDown = true;
+        startY = e.clientY;
+        startScrollTop = chatScroll.scrollTop;
+      });
+
+      chatScroll.addEventListener('pointermove', (e) => {
+        if (!vDown) return;
+        const dy = e.clientY - startY;
+        if (Math.abs(dy) > 6) {
+          this.touchState.wasDragged = true;
+          const zoom = this.state.zoom || 0.68;
+          chatScroll.scrollTop = startScrollTop - (dy / zoom);
+        }
+      });
+
+      const stopVDrag = () => { vDown = false; };
+      chatScroll.addEventListener('pointerup', stopVDrag);
+      chatScroll.addEventListener('pointerleave', stopVDrag);
+    }
+
+    // 1. Carousel Horizontal Touch-Drag Simulation
     const track = this.root.querySelector('#rcs-carousel-track');
     if (track) {
       let isDown = false;
@@ -959,11 +1076,10 @@ export class RcsPhonePreview {
       let dragged = false;
 
       track.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('button')) return;
         isDown = true;
         dragged = false;
         track.classList.add('is-dragging');
-        startX = e.pageX - track.offsetLeft;
+        startX = e.clientX;
         scrollLeft = track.scrollLeft;
       });
 
@@ -982,36 +1098,14 @@ export class RcsPhonePreview {
 
       track.addEventListener('pointermove', (e) => {
         if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - track.offsetLeft;
-        const walk = (x - startX) * 1.4;
-        if (Math.abs(walk) > 6) dragged = true;
-        track.scrollLeft = scrollLeft - walk;
-      });
-
-      const prevBtn = this.root.querySelector('#rcs-carousel-prev');
-      const nextBtn = this.root.querySelector('#rcs-carousel-next');
-      if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-          track.scrollBy({ left: -272, behavior: 'smooth' });
-          this.logTelemetry('CAROUSEL_STEP', { direction: 'prev' });
-        });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-          track.scrollBy({ left: 272, behavior: 'smooth' });
-          this.logTelemetry('CAROUSEL_STEP', { direction: 'next' });
-        });
-      }
-      this.root.querySelectorAll('[data-carousel-goto]').forEach((dot) => {
-        dot.addEventListener('click', () => {
-          const idx = Number(dot.dataset.carouselGoto);
-          const cards = track.querySelectorAll('.rcs-rich-card.is-carousel-item');
-          if (cards[idx]) {
-            cards[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            this.logTelemetry('CAROUSEL_GOTO_CARD', { cardIndex: idx + 1 });
-          }
-        });
+        const zoom = this.state.zoom || 0.68;
+        const walk = ((e.clientX - startX) / zoom) * 1.25;
+        if (Math.abs(walk) > 6) {
+          dragged = true;
+          this.touchState.wasDragged = true;
+          e.preventDefault();
+          track.scrollLeft = scrollLeft - walk;
+        }
       });
     }
 
@@ -1024,9 +1118,10 @@ export class RcsPhonePreview {
       });
     });
 
-    // 2. Thumbnail Tap -> Fullscreen Media Lightbox
+    // 2. Thumbnail Tap -> Fullscreen Media Lightbox (only if not dragged)
     this.root.querySelectorAll('[data-lightbox-url]').forEach((el) => {
       el.addEventListener('click', () => {
+        if (this.touchState.wasDragged) return;
         const url = el.dataset.lightboxUrl;
         const title = el.dataset.lightboxTitle;
         this.state.activeModal = { type: 'lightbox', url, title };
@@ -1035,10 +1130,11 @@ export class RcsPhonePreview {
       });
     });
 
-    // 3. Suggested Action / Reply Button Clicks
+    // 3. Suggested Action / Reply Button Clicks (only if not dragged)
     this.root.querySelectorAll('[data-action-type]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (this.touchState.wasDragged) return;
         const actionType = btn.dataset.actionType;
         const label = btn.dataset.actionText;
         const value = btn.dataset.actionVal;
