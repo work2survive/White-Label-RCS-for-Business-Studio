@@ -1162,8 +1162,8 @@ export class RcsPhonePreview {
     if (!host) return;
 
     const device = this.getCurrentDevice();
-    const nativeW = device.nativeWidth || device.width * 3;
-    const nativeH = device.nativeHeight || device.height * 3;
+    const nativeW = device.nativeWidth || (device.width - 20) * 3;
+    const nativeH = device.nativeHeight || (device.height - 20) * 3;
     const innerW = device.width - 20; // Inner screen logical width (excluding 10px physical bezel)
     const innerH = device.height - 20; // Inner screen logical height (excluding 10px physical bezel)
 
@@ -1177,6 +1177,42 @@ export class RcsPhonePreview {
       // 1. Clone the live phone screen DOM so we can strip interactive cursors, crop overlays, and bezels
       const clone = host.cloneNode(true);
       clone.querySelectorAll('#rcs-touch-overlay, .rcs-preview-crop-overlay, .rcs-hw-cutout').forEach((el) => el.remove());
+
+      // Strip all HTML comment nodes so XMLSerializer never emits comments containing `--` (such as `--app-bg`),
+      // which are forbidden by strict XML 1.0 parsers inside SVG <foreignObject>.
+      const commentWalker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
+      const commentNodes = [];
+      while (commentWalker.nextNode()) {
+        commentNodes.push(commentWalker.currentNode);
+      }
+      commentNodes.forEach((node) => node.remove());
+
+      // Strip inline event attributes from cloned nodes
+      clone.querySelectorAll('[onclick]').forEach((el) => el.removeAttribute('onclick'));
+
+      // Inline all live <img> elements as rasterized Base64 PNG Data URLs so Chromium's isolated SVG
+      // <foreignObject> renderer renders every SVG data URI, blob URL, and JPEG synchronously.
+      const liveImgs = Array.from(host.querySelectorAll('img'));
+      const cloneImgs = Array.from(clone.querySelectorAll('img'));
+      for (let i = 0; i < liveImgs.length; i++) {
+        const liveImg = liveImgs[i];
+        const cloneImg = cloneImgs[i];
+        if (!liveImg || !cloneImg) continue;
+        try {
+          const w = liveImg.naturalWidth || liveImg.width || 320;
+          const h = liveImg.naturalHeight || liveImg.height || 320;
+          if (w > 0 && h > 0 && liveImg.complete) {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const cctx = c.getContext('2d');
+            cctx.drawImage(liveImg, 0, 0, w, h);
+            cloneImg.setAttribute('src', c.toDataURL('image/png'));
+          }
+        } catch (_) {
+          // Keep original src if canvas conversion is skipped
+        }
+      }
 
       // Preserve current scroll offsets (chat feed & carousel track) and live input values
       const liveChatScroll = host.querySelector('#rcs-chat-scroll');
@@ -1210,6 +1246,8 @@ export class RcsPhonePreview {
       }
 
       // Configure the cloned root to render as a pure borderless native screen (innerW × innerH)
+      clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+      clone.classList.add('is-frameless');
       clone.style.position = 'relative';
       clone.style.top = '0';
       clone.style.left = '0';
@@ -1225,19 +1263,27 @@ export class RcsPhonePreview {
       clone.style.boxShadow = 'none';
       clone.style.margin = '0';
 
-      // 2. Collect all active stylesheet rules so the SVG foreignObject is 100% self-contained
+      // 2. Collect all active local stylesheet rules (excluding external @import / font rules)
       let cssText = '';
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          for (const rule of Array.from(sheet.cssRules)) {
-            cssText += `${rule.cssText}\n`;
+      const inlineStyleEl = document.getElementById('rcs-inline-styles');
+      if (inlineStyleEl && inlineStyleEl.textContent) {
+        cssText = inlineStyleEl.textContent;
+      } else {
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            for (const rule of Array.from(sheet.cssRules)) {
+              if (rule.type === CSSRule.IMPORT_RULE || rule.type === CSSRule.FONT_FACE_RULE) continue;
+              cssText += `${rule.cssText}\n`;
+            }
+          } catch (_) {
+            // Ignore cross-origin stylesheet security restrictions
           }
-        } catch (_) {
-          // Ignore cross-origin stylesheet security restrictions if any
         }
       }
       // Disable entry animations during static screenshot rasterization
       cssText += `\n* { animation: none !important; transition: none !important; }\n`;
+      // Sanitize any accidental ]]> sequence inside CSS
+      cssText = cssText.replace(/\]\]>/g, '');
 
       // 3. Serialize the cloned XHTML + CSS into an SVG <foreignObject> scaled to nativeW × nativeH
       const serializer = new XMLSerializer();
@@ -1261,7 +1307,6 @@ export class RcsPhonePreview {
 
       await new Promise((resolve, reject) => {
         const img = new Image();
-        img.decoding = 'sync';
         img.onload = () => {
           ctx.drawImage(img, 0, 0, nativeW, nativeH);
           resolve();
@@ -1280,10 +1325,13 @@ export class RcsPhonePreview {
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = filename;
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
+
+      // Show a floating download confirmation banner in the preview stage with a direct download link
+      this.showScreenshotBanner(downloadUrl, filename, `${nativeW} × ${nativeH} px`, device.name);
 
       this.logTelemetry('SCREENSHOT_SAVED', {
         device: device.id,
@@ -1295,9 +1343,53 @@ export class RcsPhonePreview {
     } finally {
       this.state.isCapturingScreenshot = false;
       if (screenshotBtn) {
-        screenshotBtn.innerHTML = `${getIcon('camera')} <span>Screenshot (${nativeW}×${nativeH})</span>`;
+        screenshotBtn.innerHTML = `${getIcon('camera')} <span>✓ Saved (${nativeW}×${nativeH})</span>`;
+        setTimeout(() => {
+          if (this.root.contains(screenshotBtn) && !this.state.isCapturingScreenshot) {
+            screenshotBtn.innerHTML = `${getIcon('camera')} <span>Screenshot (${nativeW}×${nativeH})</span>`;
+          }
+        }, 2200);
       }
     }
+  }
+
+  /**
+   * Displays a floating confirmation bar in `#rcs-stage-wrap` with a thumbnail and a direct
+   * `<a download>` button so users can also save/open the screenshot if their browser or iframe
+   * requires an explicit link click.
+   */
+  showScreenshotBanner(downloadUrl, filename, resolutionLabel, deviceName) {
+    const stage = this.root.querySelector('#rcs-stage-wrap');
+    if (!stage) return;
+    const prev = stage.querySelector('#rcs-screenshot-saved-toast');
+    if (prev) prev.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'rcs-screenshot-saved-toast';
+    banner.className = 'rcs-screenshot-toast';
+    banner.innerHTML = `
+      <img src="${downloadUrl}" alt="Screenshot thumbnail" class="rcs-screenshot-toast-thumb" />
+      <div class="rcs-screenshot-toast-info">
+        <strong>Screenshot Ready (${this.escapeHtml(resolutionLabel)})</strong>
+        <span>${this.escapeHtml(deviceName)} • ${this.escapeHtml(filename)}</span>
+      </div>
+      <a href="${downloadUrl}" download="${this.escapeHtml(filename)}" class="rcs-screenshot-toast-dl">⬇ Save PNG</a>
+      <button type="button" class="rcs-screenshot-toast-close" aria-label="Dismiss">✕</button>
+    `;
+    stage.appendChild(banner);
+
+    const closeBtn = banner.querySelector('.rcs-screenshot-toast-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        banner.remove();
+        URL.revokeObjectURL(downloadUrl);
+      });
+    }
+    setTimeout(() => {
+      if (banner.isConnected) {
+        banner.remove();
+      }
+    }, 8000);
   }
 
   attachEvents() {
