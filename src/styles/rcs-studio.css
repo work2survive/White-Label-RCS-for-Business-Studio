@@ -1,18 +1,46 @@
 /**
- * @fileoverview Stylesheet for the Agnostic RCS Rich Card Template Chooser (`RcsTemplateChooser`)
- * and Mobile Phone Simulator (`RcsPhonePreview`).
- * Engineered to fit comfortably within a 1280×720 (720p) viewport while adapting fluidly to larger screens.
+ * ============================================================================
+ * @fileoverview Stylesheet for the Agnostic RCS Rich Card Template Chooser
+ * (`RcsTemplateChooser`) and Mobile Phone Simulator (`RcsPhonePreview`).
+ * ============================================================================
+ *
+ * ARCHITECTURE & STYLING SECTIONS:
+ * 1. Studio Design Tokens (`:root`):
+ *    Dark-mode workbench palette, typography, semantic status colors (OK, Warn,
+ *    Danger), and border radii.
+ * 2. Compact 720p Studio Shell Layout (`.rcs-workbench`, `.rcs-workbench-main`):
+ *    Two-column CSS Grid (`minmax(420px, 47%) 1fr`) designed to fit inside a
+ *    1280×720 viewport while supporting standalone Chooser-Only or Preview-Only
+ *    modes.
+ * 3. Module 1 — Template & Content Chooser (`.rc-chooser`, `.rc-module-section`):
+ *    Vertical-scroll workspace with sticky Quick-Jump Pill Bar and 8 collapsible
+ *    accordion modules (`is-collapsed`), character limit meters, and media crop
+ *    safe-zone visualizers.
+ * 4. Module 2 — Hardware Chassis & OS App Skins (`.rp-phone-chassis`, `.rp-viewport`):
+ *    True-to-life 19.5:9 hardware bezels (Google Pixel, Samsung Galaxy, Motorola,
+ *    iPhone Dynamic Island, Foldable Dual-Screen), hidden native scrollbars,
+ *    Google Messages (Material 3), Samsung Messages (One UI), and iOS 18+ RCS
+ *    skins in Light & Dark themes.
+ * 5. Custom Touch Cursor & Blue Touch-Area Overlay (`.rp-cursor-follower`,
+ *    `.rp-touch-spot`):
+ *    Floating hand SVG cursor and glowing 52×52px blue touch indicator when
+ *    tapping or dragging inside the simulated phone screen.
  */
 
 :root {
+  /* Core Studio Surface Palette */
   --studio-bg: #0f141c;
   --studio-panel: #161d27;
   --studio-panel-elevated: #1d2633;
   --studio-border: #283344;
   --studio-border-subtle: #1f2937;
+
+  /* Studio Typography & Hierarchy Colors */
   --studio-text: #f1f5f9;
   --studio-text-muted: #94a3b8;
   --studio-text-dim: #64748b;
+
+  /* Interactive Accents & Validation Status Tokens */
   --studio-accent: #0284c7;
   --studio-accent-hover: #0369a1;
   --studio-accent-soft: rgba(2, 132, 199, 0.16);

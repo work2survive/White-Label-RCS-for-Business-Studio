@@ -1,8 +1,30 @@
 /**
- * @fileoverview Agnostic RCS Template Chooser & Content/Agent Configurator Module.
- * Can be mounted standalone in any DOM container via `new RcsTemplateChooser(el, opts)`
- * or used as a Web Component `<rcs-template-chooser>`.
- * Communicates via standard CustomEvents (`rcs:change`, `rcs:template-select`, `rcs:crop-overlay-toggle`, `rcs:flow-action`).
+ * @fileoverview Agnostic RCS Template Chooser & Content/Agent Configurator Module (`src/modules/template-chooser.js`)
+ *
+ * Key Capabilities & Architecture:
+ * --------------------------------
+ * 1. **Standalone & Framework-Agnostic**:
+ *    - Mountable in any DOM container via `new RcsTemplateChooser(el, options)` or as a native
+ *      Web Component `<rcs-template-chooser>`.
+ *    - Zero coupling to `RcsPhonePreview`; communicates exclusively via standard DOM `CustomEvent`s
+ *      (`rcs:change`, `rcs:flow-action`) and optional callback hooks (`onChange`, `onTriggerFlow`).
+ *
+ * 2. **Spacious Vertical Scroll with Collapsible Accordion Modules**:
+ *    - Organizes all RCS/SMS configuration steps into 8 self-contained, collapsible accordion cards
+ *      (`templates`, `cards`, `media`, `copy`, `actions`, `agent`, `fallback`, `json`).
+ *    - Each module header displays a step badge (`01`–`08`), title, official Google RBM documentation
+ *      link (`renderDocLink`), a live summary pill (visible even when collapsed), and a chevron toggle.
+ *    - Includes a sticky Quick-Jump bar to smoothly scroll to and auto-expand any section, plus a
+ *      1-click `Collapse All` / `Expand All` button.
+ *
+ * 3. **Real-Time Validation & Recommendations**:
+ *    - Live character progress meters comparing current copy against both recommended UX thresholds
+ *      (e.g. `≤ 40` chars for Title, `≤ 140` chars for Description before the `"More…"` fold, `≤ 25` chars
+ *      for Suggested Actions) and hard Google RBM API limits.
+ *    - Visual Safe-Zone Media Crop minimap & file-size validator (`SHORT 112dp`, `MEDIUM 168dp`, `TALL 264dp`,
+ *      plus Carousel `SMALL 120dp` and `MEDIUM 200dp` widths).
+ *    - Automatic RBM Agent brand detection (`setAgentFromExternal`) with canvas dominant-color extraction
+ *      on logo upload and graceful fallback to a generic business profile when agent metadata is absent.
  */
 
 import {
@@ -20,8 +42,15 @@ import { getIcon, renderDocLink } from './icons.js';
 
 export class RcsTemplateChooser {
   /**
-   * @param {HTMLElement|string} container
-   * @param {Object} options
+   * Initializes the RCS Template & Content Chooser inside `container`.
+   *
+   * @param {HTMLElement|string} container - Target DOM element or CSS selector.
+   * @param {Object} [options={}] - Optional configuration overrides.
+   * @param {string} [options.initialPreset='hospital_preventive_carousel'] - Initial campaign preset key.
+   * @param {Object} [options.agent] - Custom initial RBM Agent branding object.
+   * @param {Object} [options.payload] - Custom initial RBM message payload object.
+   * @param {Function} [options.onChange] - Callback invoked whenever template/content/agent state changes.
+   * @param {Function} [options.onTriggerFlow] - Callback invoked when conversation flow actions are triggered.
    */
   constructor(container, options = {}) {
     this.root = typeof container === 'string' ? document.querySelector(container) : container;
@@ -35,6 +64,11 @@ export class RcsTemplateChooser {
       activeCardIndex: 0,
       showCropGuides: true,
       agentDetected: true,
+      /**
+       * Tracks which accordion modules in the vertical stack are currently collapsed.
+       * By default, core editing modules (`templates` through `fallback`) are expanded
+       * while the raw REST JSON payload (`json`) starts collapsed to keep the scroll tidy.
+       */
       collapsedModules: {
         templates: false,
         cards: false,
@@ -58,14 +92,18 @@ export class RcsTemplateChooser {
   }
 
   /**
-   * Public API: Get current complete state (payload + agent + crop config)
+   * Public API: Returns a deep clone of the current complete module state (`payload`, `agent`, `collapsedModules`, etc.).
+   * @returns {Object}
    */
   getState() {
     return structuredClone(this.state);
   }
 
   /**
-   * Public API: Load one of the real campaign presets or custom state
+   * Public API: Loads one of the built-in campaign presets (`hospital_preventive_carousel`, `tipos_lottery`,
+   * `telekom_carousel`, `doxxbet_multi`, `whitelabel_booking`) and notifies listeners.
+   *
+   * @param {string} presetId - Key in `REAL_CAMPAIGN_PRESETS`.
    */
   loadPreset(presetId) {
     const preset = REAL_CAMPAIGN_PRESETS[presetId];
@@ -80,7 +118,11 @@ export class RcsTemplateChooser {
   }
 
   /**
-   * Public API: Toggle or set collapsed state of a specific module
+   * Public API: Toggles or explicitly sets the collapsed state of a specific accordion module card.
+   * Performs an in-place DOM class update when possible so scroll position and input focus are never disrupted.
+   *
+   * @param {string} moduleId - Module key (`'templates'|'cards'|'media'|'copy'|'actions'|'agent'|'fallback'|'json'`).
+   * @param {boolean|null} [forceCollapse=null] - Optional explicit boolean (`true` = collapse, `false` = expand).
    */
   toggleModule(moduleId, forceCollapse = null) {
     if (!(moduleId in this.state.collapsedModules)) return;
@@ -105,7 +147,8 @@ export class RcsTemplateChooser {
   }
 
   /**
-   * Public API: Expand or collapse all modules at once
+   * Public API: Expands or collapses all 8 accordion modules simultaneously.
+   * @param {boolean} collapsed - `true` to collapse all modules, `false` to expand all.
    */
   setAllModulesCollapsed(collapsed) {
     Object.keys(this.state.collapsedModules).forEach((k) => {
@@ -116,8 +159,10 @@ export class RcsTemplateChooser {
   }
 
   /**
-   * Public API: Simulate auto-detecting Agent Branding from an external RBM Agent object
-   * or falling back to a generic white-label agent if not detected.
+   * Public API: Simulates auto-detecting RBM Agent branding (Display Name, Brand Color, Logo, Verification)
+   * from an external host platform, or falls back to a customizable generic white-label profile when `null`.
+   *
+   * @param {Object|null} [agentData=null] - External RBM agent profile object, or `null` to trigger fallback.
    */
   setAgentFromExternal(agentData = null) {
     if (agentData && agentData.name) {

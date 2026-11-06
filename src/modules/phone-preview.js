@@ -1,10 +1,24 @@
 /**
- * @fileoverview Agnostic Mobile Phone RCS & SMS Preview Module (`RcsPhonePreview`).
- * Can be used completely independently via `new RcsPhonePreview(el, options)` or `<rcs-phone-preview>`.
- * Accurately simulates Google Messages (Android 14/15 Material 3), Samsung Messages (One UI),
- * and Apple iOS 18+ RCS in Light & Dark themes across popular phone models, with interactive
- * carousel dragging, thumbnail lightbox, action sheets, bubble entrance animations, SMS fallback,
- * zoom controls, and real-time reporting/telemetry event emission.
+ * @fileoverview Agnostic Mobile Phone RCS & SMS Preview Module (`src/modules/phone-preview.js`)
+ *
+ * Key Capabilities:
+ * -----------------
+ * 1. **Standalone & Framework-Agnostic**: Mountable via `new RcsPhonePreview(el, options)` or as a
+ *    native Web Component `<rcs-phone-preview>`. Has zero dependency on `RcsTemplateChooser`.
+ * 2. **Multi-OS & Hardware Fidelity**:
+ *    - Accurately simulates **Google Messages (Android 14/15 Material 3)**, **Samsung Messages (One UI 6.1+)**,
+ *      and **Apple Messages (iOS 18.2+ RBM Profile)** in both **Light** and **Dark** themes.
+ *    - Preserves true `19.5:9` (`412×892 dp` Android / `393×852 pt` iOS) and `6:5` Foldable hardware
+ *      proportions at every zoom scale using an isolated bounding container (`.rcs-phone-scale-container`)
+ *      so Flexbox never squishes the device horizontally.
+ * 3. **Authentic Mobile Touch & Gesture Simulation**:
+ *    - Replaces the system pointer over the phone with a floating **Hand Cursor SVG** (`#rcs-touch-cursor`).
+ *    - Pressing/tapping switches to an **Active Pressed Hand SVG** and renders a **Blue Touch-Area Overlay**
+ *      (`#rcs-touch-blue-area`, `52×52px` glowing blue circle + expanding `.rcs-touch-ripple`).
+ *    - Hides all native scrollbars inside the phone and supports both vertical touch-drag scrolling
+ *      (conversation feed) and horizontal touch-drag swiping (Rich Card Carousels & Suggestion Chips).
+ * 4. **Telemetry & Reporting Ready**: Emits structured `rcs:telemetry` CustomEvents (`PREVIEW_INIT`,
+ *    `CARD_IMPRESSION`, `CAROUSEL_SWIPE`, `MEDIA_EXPAND`, `ACTION_CLICK`, `FALLBACK_TRIGGERED`, etc.).
  */
 
 import {
@@ -21,8 +35,17 @@ import { getIcon, renderDocLink } from './icons.js';
 
 export class RcsPhonePreview {
   /**
-   * @param {HTMLElement|string} container
-   * @param {Object} options
+   * Initializes a standalone mobile phone RCS/SMS simulator inside `container`.
+   *
+   * @param {HTMLElement|string} container - Target DOM element or CSS selector.
+   * @param {Object} [options={}] - Optional configuration overrides.
+   * @param {string} [options.initialPreset='hospital_preventive_carousel'] - Initial campaign preset ID.
+   * @param {string} [options.deviceId='pixel_9_pro'] - Initial hardware device preset ID.
+   * @param {string} [options.skinId='google_messages_m3'] - Initial OS messaging app skin ID.
+   * @param {'light'|'dark'} [options.theme='light'] - Initial OS color theme.
+   * @param {number} [options.zoom=0.68] - Initial viewport zoom factor (`0.5` to `1.35`).
+   * @param {boolean} [options.showCropGuides=true] - Whether to display media crop overlays on cards.
+   * @param {Function} [options.onTelemetry] - Optional callback invoked on every simulated user interaction.
    */
   constructor(container, options = {}) {
     this.root = typeof container === 'string' ? document.querySelector(container) : container;
@@ -32,6 +55,7 @@ export class RcsPhonePreview {
 
     const defaultPreset = REAL_CAMPAIGN_PRESETS[options.initialPreset || 'hospital_preventive_carousel'];
 
+    // Clone device & skin catalogs so runtime custom presets don't mutate shared constants
     this.devices = structuredClone(DEVICE_PRESETS);
     this.skins = structuredClone(OS_APP_SKINS);
 
@@ -39,19 +63,32 @@ export class RcsPhonePreview {
       deviceId: options.deviceId || 'pixel_9_pro',
       skinId: options.skinId || 'google_messages_m3',
       theme: options.theme || 'light', // 'light' | 'dark'
-      zoom: options.zoom || 0.76, // Fits 720p viewport cleanly by default
+      zoom: options.zoom || 0.68, // Fits 720p viewport cleanly without vertical clipping
       autoFit: options.autoFit !== false,
-      channelOverride: null, // null | 'sms_fallback'
+      channelOverride: null, // null (live RCS) | 'sms_fallback'
       showCropGuides: options.showCropGuides ?? true,
       showRealRefOverlay: false,
       referenceScreenshot: defaultPreset.referenceScreenshot,
       agent: structuredClone(options.agent || defaultPreset.agent),
       payload: structuredClone(options.payload || defaultPreset.payload),
-      conversationHistory: [], // Additional interactive messages in the feed
+      conversationHistory: [], // Additional interactive messages appended during simulation
       isTyping: false,
-      activeModal: null, // { type: 'lightbox' | 'webview' | 'dial' | 'location' | 'calendar' | 'preset-Modal', data: ... }
+      activeModal: null, // { type: 'lightbox' | 'action-sheet' | 'preset-builder', ... }
       expandedDescriptions: new Set(),
       telemetryCount: 0
+    };
+
+    /**
+     * Tracks pointer coordinates and press state inside the phone screen for the custom
+     * hand cursor (`#rcs-touch-cursor`) and blue touch-area overlay (`#rcs-touch-blue-area`).
+     * `wasDragged` prevents accidental card/lightbox clicks at the end of a drag-scroll gesture.
+     */
+    this.touchState = {
+      visible: false,
+      tapping: false,
+      x: 200,
+      y: 420,
+      wasDragged: false
     };
 
     this.onTelemetry = typeof options.onTelemetry === 'function' ? options.onTelemetry : null;
@@ -66,7 +103,14 @@ export class RcsPhonePreview {
   }
 
   /**
-   * Public API: Update message payload, agent branding, and crop guide visibility
+   * Public API: Updates the rendered RCS/SMS payload, RBM Agent branding, crop guide visibility,
+   * or reference screenshot without resetting the phone hardware toolbar or conversation history.
+   *
+   * @param {Object} [params={}]
+   * @param {Object} [params.payload] - Updated RBM message payload.
+   * @param {Object} [params.agent] - Updated RBM agent branding metadata.
+   * @param {boolean} [params.showCropGuides] - Toggle safe-zone crop overlay on media.
+   * @param {string|null} [params.referenceScreenshot] - Optional base64 reference screenshot URI.
    */
   update({ payload, agent, showCropGuides, referenceScreenshot } = {}) {
     if (payload) this.state.payload = structuredClone(payload);
@@ -83,7 +127,9 @@ export class RcsPhonePreview {
   }
 
   /**
-   * Public API: Trigger interactive conversation animation or SMS fallback switch
+   * Public API: Triggers an interactive conversation flow action inside the phone simulator.
+   *
+   * @param {'toggle-sms-fallback-view'|'push-user-msg'|'play-full-conversation'} action
    */
   triggerFlowAction(action) {
     if (action === 'toggle-sms-fallback-view') {
@@ -970,6 +1016,10 @@ export class RcsPhonePreview {
     this.attachViewportEvents();
   }
 
+  /**
+   * Binds all interactive pointer, touch-drag, carousel-swipe, lightbox, and action-sheet
+   * listeners inside the rendered phone screen (`#rcs-phone-viewport-host`).
+   */
   attachViewportEvents() {
     const host = this.root.querySelector('#rcs-phone-viewport-host');
     const overlay = this.root.querySelector('#rcs-touch-overlay');
@@ -977,7 +1027,12 @@ export class RcsPhonePreview {
     const blueAreaEl = this.root.querySelector('#rcs-touch-blue-area');
     const chatScroll = this.root.querySelector('#rcs-chat-scroll');
 
+    // -------------------------------------------------------------------------
     // 0. Custom Hand Cursor & Blue Touch-Area Overlay on the Phone Screen
+    //    Maps viewport pointer coordinates back into the unscaled hardware coordinate
+    //    system (`host.offsetWidth / rect.width`) so the hand cursor and 52×52px blue
+    //    touch circle align with the exact pixel under the pointer at any zoom level.
+    // -------------------------------------------------------------------------
     if (host && overlay && cursorEl && blueAreaEl) {
       const updateTouchCoords = (e) => {
         const rect = host.getBoundingClientRect();
@@ -1011,9 +1066,10 @@ export class RcsPhonePreview {
         this.touchState.tapping = true;
         this.touchState.wasDragged = false;
         updateTouchCoords(e);
+        // Activate the pressed hand icon (.is-tap-hand) and glowing blue touch-area circle
         overlay.classList.add('is-visible', 'is-tapping');
 
-        // Spawn a transient blue touch ripple at the tapped screen area
+        // Spawn a transient expanding blue touch ripple at the tapped screen coordinates
         const ripple = document.createElement('span');
         ripple.className = 'rcs-touch-ripple';
         ripple.style.left = `${this.touchState.x}px`;
@@ -1039,7 +1095,10 @@ export class RcsPhonePreview {
       };
     }
 
-    // 0b. Vertical Touch-Drag Scrolling on Chat Thread (No Scrollbars)
+    // -------------------------------------------------------------------------
+    // 0b. Vertical Touch-Drag Scrolling on Chat Thread (Scrollbars Hidden)
+    //     Allows dragging the conversation up/down like a real mobile touchscreen.
+    // -------------------------------------------------------------------------
     if (chatScroll) {
       let vDown = false;
       let startY = 0;
@@ -1067,7 +1126,11 @@ export class RcsPhonePreview {
       chatScroll.addEventListener('pointerleave', stopVDrag);
     }
 
+    // -------------------------------------------------------------------------
     // 1. Carousel Horizontal Touch-Drag Simulation
+    //    Supports dragging left/right across the 2–10 Rich Cards with momentum feel
+    //    and logs a `CAROUSEL_SWIPE` telemetry event when released.
+    // -------------------------------------------------------------------------
     const track = this.root.querySelector('#rcs-carousel-track');
     if (track) {
       let isDown = false;

@@ -814,12 +814,31 @@ export const REAL_CAMPAIGN_PRESETS = {
 };
 
 /**
- * Compute SMS segment count and encoding (GSM-7 vs UCS-2)
+ * Analyzes an SMS fallback message string to determine its character encoding (`GSM-7` vs `UCS-2`),
+ * total character count, number of billable SMS segments, and remaining characters in the current segment.
+ *
+ * Encoding Rules:
+ * - **GSM-7**: Standard 7-bit alphabet. Supports up to `160` chars in a single SMS, or `153` chars
+ *   per segment in concatenated multi-part SMS (7 bytes reserved for UDH concatenation header).
+ * - **UCS-2 (Unicode)**: Triggered automatically if any non-GSM-7 character (e.g. emojis, Slovak/Czech
+ *   diacritics like `č, š, ž, ť, ľ, á, í, ý`) is present. Supports `70` chars in a single SMS, or
+ *   `67` chars per concatenated segment.
+ *
+ * @param {string} [text=''] - The raw SMS fallback text to analyze.
+ * @returns {{
+ *   encoding: string,
+ *   length: number,
+ *   segments: number,
+ *   singleLimit: number,
+ *   multiLimit: number,
+ *   remaining: number
+ * }}
  */
 export function analyzeSmsSegments(text = '') {
-  // Basic GSM-7 character check
+  // Regular expression matching the standard 7-bit GSM 03.38 character set
   const gsm7Regex = /^[@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\-./0-9:;<=>?¡A-ZÄÖÑÜ§¿a-zäöñüà^{}\\[~\]|€]*$/;
   const isGsm7 = gsm7Regex.test(text);
+  // Count Unicode code points accurately using Array.from()
   const length = Array.from(text).length;
   const singleLimit = isGsm7 ? TEXT_LIMITS.smsFallback.gsmSingle : TEXT_LIMITS.smsFallback.ucsSingle;
   const multiLimit = isGsm7 ? TEXT_LIMITS.smsFallback.gsmMulti : TEXT_LIMITS.smsFallback.ucsMulti;
@@ -839,12 +858,39 @@ export function analyzeSmsSegments(text = '') {
 }
 
 /**
- * Evaluate media fit & crop percentage against target RCS media height/orientation
+ * Evaluates how a mobile RCS client (Google Messages, Samsung Messages, Apple Messages) will
+ * center-crop (`object-fit: cover`) an uploaded image, GIF, or video inside a Rich Card media slot.
+ *
+ * Geometry Calculation:
+ * - For **Standalone Vertical Cards**, the target aspect ratio is defined by `MEDIA_SPECS[mediaHeightKey]`
+ *   (`SHORT` = 112dp, `MEDIUM` = 168dp, `TALL` = 264dp).
+ * - For **Carousel Cards**, each card has a constrained width (`SMALL` = 186px effective / 120dp spec,
+ *   `MEDIUM` = 264px effective / 200dp spec) paired with the selected `mediaHeightKey` (`112dp`, `168dp`, `264dp`),
+ *   yielding a tighter effective aspect ratio (`cWidth / cHeight`).
+ * - Compares `srcRatio` (`srcW / srcH`) against `targetRatio` to determine whether the **horizontal**
+ *   (left/right edges) or **vertical** (top/bottom edges) axis will be cropped and by what percentage.
+ *
+ * @param {{ width?: number, height?: number }} dimensions - Pixel dimensions of the source media asset.
+ * @param {'SHORT'|'MEDIUM'|'TALL'|'HORIZONTAL'} [mediaHeightKey='MEDIUM'] - Selected RBM media height slot.
+ * @param {boolean} [isCarousel=false] - True when rendering inside a Rich Card Carousel.
+ * @param {'SMALL'|'MEDIUM'} [cardWidthKey='MEDIUM'] - Selected Carousel card width.
+ * @returns {{
+ *   spec: Object,
+ *   srcW: number,
+ *   srcH: number,
+ *   srcRatio: number,
+ *   targetRatio: number,
+ *   cropAxis: 'none'|'horizontal'|'vertical',
+ *   visibleFraction: number,
+ *   croppedPercent: number,
+ *   recText: string
+ * }}
  */
 export function evaluateMediaCrop(dimensions, mediaHeightKey = 'MEDIUM', isCarousel = false, cardWidthKey = 'MEDIUM') {
   const spec = MEDIA_SPECS[mediaHeightKey] || MEDIA_SPECS.MEDIUM;
   let targetRatio = spec.aspectRatio;
 
+  // In a Carousel, card width is narrower than a full-width standalone card, changing the effective media aspect ratio
   if (isCarousel) {
     const cWidth = CAROUSEL_WIDTH_SPECS[cardWidthKey]?.dpWidth || 264;
     const cHeight = spec.dpHeight || 168;
@@ -859,13 +905,14 @@ export function evaluateMediaCrop(dimensions, mediaHeightKey = 'MEDIUM', isCarou
   let visibleFraction = 1;
   let croppedPercent = 0;
 
+  // Allow a 3% tolerance before flagging horizontal or vertical edge cropping
   if (Math.abs(srcRatio - targetRatio) > 0.03) {
     if (srcRatio > targetRatio) {
-      // Source is wider than container -> left & right sides are cropped
+      // Source image is wider than the RCS media container -> left & right edges are center-cropped
       cropAxis = 'horizontal';
       visibleFraction = targetRatio / srcRatio;
     } else {
-      // Source is taller than container -> top & bottom are cropped
+      // Source image is taller than the RCS media container -> top & bottom edges are center-cropped
       cropAxis = 'vertical';
       visibleFraction = srcRatio / targetRatio;
     }
@@ -884,3 +931,4 @@ export function evaluateMediaCrop(dimensions, mediaHeightKey = 'MEDIUM', isCarou
     recText: `${spec.recWidthPx}×${spec.recHeightPx}px (${spec.aspectLabel}) • max ${Math.round(spec.maxImageKb / 1024 * 10) / 10}MB`
   };
 }
+
